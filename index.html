@@ -3,386 +3,265 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Log Incremental: Convergence</title>
+    <title>Log Incremental: Flappy & Softcap</title>
     <script src="https://cdn.jsdelivr.net/npm/break_eternity.js@2"></script>
     <style>
-        :root { --bg: #f8fafc; --text: #0f172a; --card: #ffffff; --border: #e2e8f0; --accent: #3b82f6; --exp: #8b5cf6; --mini: #10b981; --chal: #f97316; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; user-select: none; }
+        /* [하얀 테마 설정] */
+        :root { --bg: #ffffff; --text: #333333; --card: #f9f9f9; --border: #eeeeee; --accent: #4a90e2; --softcap: #e74c3c; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* 상단 공통 정보 */
-        .header-panel { background: var(--card); padding: 15px 10px; text-align: center; border-bottom: 2px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.02); z-index: 10; }
-        .x-val { font-size: 2.5rem; font-weight: 900; color: var(--accent); margin: 5px 0; letter-spacing: -1px; }
-        .y-val { font-size: 0.9rem; color: #475569; font-weight: bold; }
-        
-        /* 탭 콘텐츠 영역 */
-        .content-area { flex: 1; overflow-y: auto; padding: 15px 10px; padding-bottom: 80px; }
-        .tab-content { display: none; animation: fadeIn 0.2s; }
+        /* 상단 대시보드 */
+        .header { padding: 20px; text-align: center; border-bottom: 1px solid var(--border); }
+        #x-display { font-size: 2.5rem; font-weight: bold; color: var(--accent); }
+        #softcap-notice { font-size: 0.8rem; color: var(--softcap); display: none; }
+
+        /* 탭 시스템 */
+        .content { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 80px; }
+        .tab-content { display: none; }
         .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* 하단 탭 네비게이션 */
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 65px; background: var(--card); border-top: 1px solid var(--border); display: flex; z-index: 20; }
-        .tab-btn { flex: 1; border: none; background: transparent; color: #94a3b8; font-weight: bold; font-size: 0.8rem; cursor: pointer; touch-action: manipulation; transition: 0.1s; }
-        .tab-btn.active { color: var(--accent); border-top: 3px solid var(--accent); background: #f1f5f9; }
-
-        /* UI 컴포넌트 */
-        .main-tap { width: 100%; height: 60px; background: var(--accent); color: white; border: none; border-radius: 12px; font-size: 1.2rem; font-weight: bold; touch-action: manipulation; margin-bottom: 15px; cursor: pointer; box-shadow: 0 4px 0 #2563eb; }
-        .main-tap:active { transform: translateY(4px); box-shadow: 0 0 0 #2563eb; }
         
-        .formula-box { background: #1e293b; color: #38bdf8; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 0.85rem; text-align: center; margin-bottom: 15px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); line-height: 1.5; }
-        .math-var { color: #facc15; font-weight: bold; }
+        /* 하단 메뉴 */
+        .nav { position: fixed; bottom: 0; width: 100%; height: 60px; display: flex; background: white; border-top: 1px solid var(--border); }
+        .nav-btn { flex: 1; border: none; background: none; font-weight: bold; color: #888; }
+        .nav-btn.active { color: var(--accent); border-top: 3px solid var(--accent); }
 
-        /* 업그레이드 표 */
-        .upg-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; background: var(--card); border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .upg-table th { background: #f1f5f9; padding: 8px 4px; color: #475569; border-bottom: 1px solid var(--border); }
-        .upg-table td { padding: 8px 4px; border-bottom: 1px solid var(--border); text-align: center; vertical-align: middle; }
-        .btn-buy { background: var(--accent); color: white; border: none; padding: 6px 8px; border-radius: 6px; font-weight: bold; cursor: pointer; touch-action: manipulation; width: 100%; }
-        .btn-buy:disabled { background: #e2e8f0; color: #94a3b8; box-shadow: none; transform: none; }
-        .btn-exp-buy { background: var(--exp); }
+        /* 업그레이드 Row 디자인 */
+        .upg-row { margin-bottom: 20px; }
+        .upg-row-title { font-size: 0.9rem; font-weight: bold; margin-bottom: 10px; color: #666; border-left: 4px solid var(--accent); padding-left: 8px; }
+        .upg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .upg-card { background: var(--card); padding: 12px; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
+        .upg-card button { width: 100%; margin-top: 8px; padding: 8px; border: none; border-radius: 5px; background: var(--accent); color: white; font-weight: bold; }
+        .upg-card button:disabled { background: #ccc; }
 
-        /* 미니게임 & 도전 & 리셋 */
-        .mini-bar { width: 100%; height: 35px; background: #e2e8f0; border-radius: 10px; position: relative; overflow: hidden; margin-bottom: 15px; }
-        .mini-target { position: absolute; height: 100%; background: rgba(16, 185, 129, 0.4); border-left: 2px solid var(--mini); border-right: 2px solid var(--mini); left: 40%; width: 20%; }
-        .mini-pointer { position: absolute; width: 5px; height: 100%; background: #ef4444; left: 0; }
-        .chal-card { border: 2px solid var(--chal); padding: 10px; border-radius: 8px; margin-bottom: 10px; background: #fffaf0; text-align: center; }
-        .reset-btn { background: var(--exp); width: 100%; height: 55px; color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: bold; margin-bottom: 15px; cursor: pointer; box-shadow: 0 4px 0 #7c3aed; }
-        .reset-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #7c3aed; }
+        /* 플러피 미니게임 */
+        #flappy-canvas { background: #e3f2fd; display: block; margin: 0 auto; border-radius: 10px; border: 2px solid #bbdefb; touch-action: none; }
+        .mini-info { text-align: center; margin-bottom: 10px; font-size: 0.9rem; }
+
+        /* 공식 박스 */
+        .formula { background: #f0f0f0; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 0.8rem; text-align: center; margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
-<div class="header-panel">
-    <div style="font-size: 0.8rem; color: #64748b; font-weight: bold;">임계 수렴치 X</div>
-    <div class="x-val" id="x-val">1.000</div>
-    <div class="y-val">에너지 Y: <span id="y-val" style="color: var(--accent);">10</span> <span id="y-auto-disp" style="font-size:0.7rem; color:#10b981;"></span></div>
+<div class="header">
+    <div style="font-size: 0.9rem; font-weight: bold;">현재 X값</div>
+    <div id="x-display">1.0000</div>
+    <div id="softcap-notice">⚠️ 소프트캡 활성화 (성장 둔화됨)</div>
+    <div style="font-size: 0.9rem; margin-top: 5px;">에너지 Y: <span id="y-display" style="color:var(--accent)">10</span></div>
 </div>
 
-<div class="content-area">
-    <div id="tab-log" class="tab-content active">
-        <button class="main-tap" onclick="doClick()">에너지 주입 (+<span id="c-val">1</span> Y)</button>
+<div class="content">
+    <div id="tab-main" class="tab-content active">
+        <div class="formula">
+            x = log( (x*z)^a * b^c + y ) <br>
+            <span id="softcap-formula" style="color:#e74c3c"></span>
+        </div>
         
-        <div class="formula-box">
-            x = log<sub id="f-base">10</sub>( (<span class="math-var">x</span> * <span id="f-z">1</span>)<sup id="f-a">1</sup> * (<span id="f-b">2</span><sup id="f-c">0</sup>) + <span class="math-var">Y</span> )
+        <div class="upg-row">
+            <div class="upg-row-title">Row 1: 방정식 변수 강화</div>
+            <div class="upg-grid" id="row1-upgs"></div>
         </div>
 
-        <table class="upg-table">
-            <thead><tr><th>변수</th><th>효과</th><th>비용(X)</th><th>구매</th></tr></thead>
-            <tbody id="main-upgs"></tbody>
-        </table>
+        <div class="upg-row">
+            <div class="upg-row-title">Row 2: 에너지 및 로그 최적화</div>
+            <div class="upg-grid" id="row2-upgs"></div>
+        </div>
     </div>
 
     <div id="tab-mini" class="tab-content">
-        <h3 style="color: var(--mini); margin-top:0;">동기화 캐치</h3>
-        <p style="font-size: 0.8rem; color:#64748b;">초록 구간에 터치하여 Y를 폭발적으로 획득하세요.</p>
-        <div class="mini-bar">
-            <div class="mini-target" id="mini-target"></div>
-            <div class="mini-pointer" id="mini-pointer"></div>
+        <div class="mini-info">
+            화면을 터치해 날아오르세요!<br>
+            <b>최고 점수: <span id="best-score">0</span></b><br>
+            보너스: Y 생산량 <b>x<span id="mini-bonus">1.00</span></b> 증폭
         </div>
-        <button class="main-tap" style="background:var(--mini); box-shadow:0 4px 0 #059669;" onclick="hitMinigame()">HIT!</button>
-        
-        <table class="upg-table" style="margin-top: 15px;">
-            <thead><tr><th>모듈</th><th>효과</th><th>비용(X)</th><th>구매</th></tr></thead>
-            <tbody id="mini-upgs"></tbody>
-        </table>
-    </div>
-
-    <div id="tab-chal" class="tab-content">
-        <h3 style="color: var(--chal); margin-top:0;">한계 돌파 (도전)</h3>
-        <p style="font-size: 0.8rem; color:#64748b;">공식의 일부가 제한됩니다. 목표 달성 시 영구 보상.</p>
-        <div id="chal-list"></div>
-    </div>
-
-    <div id="tab-exp" class="tab-content">
-        <button class="reset-btn" id="prestige-btn" onclick="doPrestige()">
-            차원 리셋 (+<span id="pending-exp">0</span> EXP)<br>
-            <span style="font-size: 0.75rem; font-weight: normal;">요구치: X >= 10</span>
-        </button>
-        <div style="text-align: center; margin-bottom: 15px; font-weight: bold; color: var(--exp);">
-            보유 EXP: <span id="exp-val" style="font-size: 1.8rem;">0</span>
-        </div>
-        <table class="upg-table">
-            <thead><tr><th>EXP 특성</th><th>효과</th><th>비용(E)</th><th>구매</th></tr></thead>
-            <tbody id="exp-upgs"></tbody>
-        </table>
+        <canvas id="flappy-canvas" width="300" height="400"></canvas>
+        <div style="text-align: center; margin-top: 10px; color: #888; font-size: 0.8rem;">터치하여 시작 / 점프</div>
     </div>
 </div>
 
-<div class="bottom-nav">
-    <button class="tab-btn active" onclick="switchTab('log', this)">방정식(Log)</button>
-    <button class="tab-btn" onclick="switchTab('mini', this)">미니게임</button>
-    <button class="tab-btn" onclick="switchTab('chal', this)">도전</button>
-    <button class="tab-btn" style="color: var(--exp);" onclick="switchTab('exp', this)">EXP</button>
+<div class="nav">
+    <button class="nav-btn active" onclick="switchTab('main', this)">메인</button>
+    <button class="nav-btn" onclick="switchTab('mini', this)">미니게임</button>
 </div>
 
 <script>
     const D = (v) => new Decimal(v);
-    
-    // Core State (y starts at 10 to guarantee x starts at ~1 and prevents getting stuck at 0)
+
+    /* [수정 가능 영역: 게임 밸런스 설정] */
     let state = {
-        x: D(1), y: D(10), exp: D(0),
+        x: D(1), y: D(10), 
         z: D(1), a: D(1), b: D(2), c: D(0), base: D(10),
-        cMult: D(1), yAuto: D(0),
-        miniSpeed: 2, miniWidth: 20, miniMult: D(20),
-        pointerPos: 0, pointerDir: 1,
-        activeChal: -1, chalCompletions: [false, false],
+        yAuto: D(0),
+        bestScore: 0,
         lastTick: Date.now()
     };
 
-    // 업그레이드 비용 산정 방식을 '덧셈'으로 변경하여 극도로 쉽게 만듦.
-    const M_UPGS = [
-        { name: "클릭 배율", desc: "cMult +1", cost: 1.05, add: 0.1, run: ()=> state.cMult=state.cMult.add(1) },
-        { name: "자동 Y", desc: "yAuto +2", cost: 1.10, add: 0.15, run: ()=> state.yAuto=state.yAuto.add(2) },
-        { name: "X 배율(z)", desc: "z +0.5", cost: 1.20, add: 0.2, run: ()=> state.z=state.z.add(0.5) },
-        { name: "상수지수(c)", desc: "c +1", cost: 1.40, add: 0.3, run: ()=> state.c=state.c.add(1) },
-        { name: "상수밑(b)", desc: "b +0.5", cost: 1.50, add: 0.4, run: ()=> state.b=state.b.add(0.5) },
-        { name: "X 지수(a)", desc: "a +0.1", cost: 2.00, add: 0.6, run: ()=> state.a=state.a.add(0.1) },
-        { name: "로그밑감소", desc: "Base -0.2",cost: 2.50, add: 0.8, run: ()=> state.base=Decimal.max(1.1, state.base.sub(0.2)) }
-    ];
-    
-    const MINI_UPGS = [
-        { name: "과녁확장", desc: "구간 +5%", cost: 1.3, add: 0.2, run: ()=> state.miniWidth=Math.min(80, state.miniWidth+5) },
-        { name: "감속", desc: "속도 감소", cost: 1.5, add: 0.3, run: ()=> state.miniSpeed=Math.max(0.5, state.miniSpeed*0.8) },
-        { name: "보상증폭", desc: "보상 x2", cost: 2.0, add: 0.5, run: ()=> state.miniMult=state.miniMult.mul(2) }
-    ];
-
-    const EXP_UPGS = [
-        { name: "시작부스트", desc: "초기 Y=1000", cost: 1, add: 1, lvl: 0, max: 1, run: ()=>{} },
-        { name: "지수 폭발", desc: "기본 a +0.5", cost: 2, add: 1, lvl: 0, run: ()=> state.a=state.a.add(0.5) },
-        { name: "배율 증폭", desc: "기본 z +2", cost: 3, add: 2, lvl: 0, run: ()=> state.z=state.z.add(2) },
-        { name: "클릭 마스터",desc: "cMult x5", cost: 4, add: 2, lvl: 0, run: ()=> state.cMult=state.cMult.mul(5) }
-    ];
-
-    const CHALS = [
-        { name: "상수 고정", desc: "b=1, c=0 고정. 목표: X >= 6", goal: 6, reward: "Y 클릭효율 x10" },
-        { name: "지수 봉인", desc: "a=0 고정. 목표: X >= 8", goal: 8, reward: "기본 X지수(a) +1" }
-    ];
-
-    let costsM = M_UPGS.map(u => D(u.cost));
-    let costsMini = MINI_UPGS.map(u => D(u.cost));
-    let costsExp = EXP_UPGS.map(u => D(u.cost));
-
-    function format(d, p=3) {
-        if(d.eq(0)) return "0";
-        if(d.lt(1000)) return d.toNumber().toLocaleString(undefined, {maximumFractionDigits: p, minimumFractionDigits: p});
-        if(d.lt(1e6)) return d.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        return d.toExponential(2).replace("+","");
+    // 가격 공식 함수 (중1 수학: y = ax + b 형태)
+    // base: 초기 가격, count: 현재 구매 횟수, mult: 가중치
+    function getPrice(base, count, mult) {
+        return D(base).add(D(count).mul(mult)); 
+        // 만약 기하급수적으로 비싸게 하려면: return D(base).mul(D(mult).pow(count));
     }
 
-    function switchTab(tabId, btn) {
+    // 업그레이드 정의
+    const UPGRADES = {
+        row1: [
+            { id: 'z', name: '변수 Z 증가', desc: 'z + 0.5', base: 1.2, mult: 0.2, run: () => state.z = state.z.add(0.5), count: 0 },
+            { id: 'a', name: '지수 A 강화', desc: 'a + 0.1', base: 2.0, mult: 0.5, run: () => state.a = state.a.add(0.1), count: 0 },
+            { id: 'b', name: '상수 B 강화', desc: 'b + 1.0', base: 1.5, mult: 0.3, run: () => state.b = state.b.add(1.0), count: 0 },
+            { id: 'c', name: '상수 C 강화', desc: 'c + 0.5', base: 1.1, mult: 0.1, run: () => state.c = state.c.add(0.5), count: 0 }
+        ],
+        row2: [
+            { id: 'yAuto', name: '자동 충전', desc: '초당 Y +5', base: 1.3, mult: 0.4, run: () => state.yAuto = state.yAuto.add(5), count: 0 },
+            { id: 'base', name: '로그 효율', desc: '밑 -0.1', base: 3.0, mult: 1.0, run: () => state.base = Decimal.max(1.1, state.base.sub(0.1)), count: 0 }
+        ]
+    };
+
+    /* [플러피 미니게임 로직] */
+    const canvas = document.getElementById('flappy-canvas');
+    const ctx = canvas.getContext('2d');
+    let bird = { x: 50, y: 200, v: 0, size: 15 };
+    let pipes = [];
+    let frame = 0;
+    let score = 0;
+    let gameActive = false;
+
+    function resetFlappy() {
+        bird.y = 200; bird.v = 0;
+        pipes = []; score = 0; frame = 0;
+    }
+
+    function updateFlappy() {
+        if (!gameActive) return;
+        bird.v += 0.4; bird.y += bird.v;
+        if (frame % 80 === 0) pipes.push({ x: 300, y: Math.random() * 200 + 50 });
+        pipes.forEach(p => p.x -= 3);
+        pipes = pipes.filter(p => p.x > -50);
+        
+        // 충돌 판정
+        if (bird.y > 400 || bird.y < 0) endGame();
+        pipes.forEach(p => {
+            if (bird.x + bird.size > p.x && bird.x - bird.size < p.x + 40) {
+                if (bird.y - bird.size < p.y - 50 || bird.y + bird.size > p.y + 50) endGame();
+            }
+            if (p.x === 50) score++;
+        });
+        frame++;
+    }
+
+    function drawFlappy() {
+        ctx.clearRect(0, 0, 300, 400);
+        ctx.fillStyle = "#ffeb3b";
+        ctx.beginPath(); ctx.arc(bird.x, bird.y, bird.size, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "#4caf50";
+        pipes.forEach(p => {
+            ctx.fillRect(p.x, 0, 40, p.y - 50);
+            ctx.fillRect(p.x, p.y + 50, 40, 400);
+        });
+        ctx.fillStyle = "#000"; ctx.font = "20px Arial"; ctx.fillText("Score: " + score, 10, 30);
+    }
+
+    function endGame() {
+        gameActive = false;
+        if (score > state.bestScore) state.bestScore = score;
+        document.getElementById('best-score').innerText = state.bestScore;
+        document.getElementById('mini-bonus').innerText = (1 + state.bestScore / 100).toFixed(2);
+    }
+
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (!gameActive) { gameActive = true; resetFlappy(); }
+        bird.v = -6;
+    });
+
+    /* [메인 게임 엔진] */
+    function switchTab(id, btn) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-        document.getElementById(`tab-${tabId}`).classList.add('active');
+        document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById('tab-' + id).classList.add('active');
         btn.classList.add('active');
     }
 
-    function buildTable(id, data, cArr, isExp=false) {
-        let html = "";
-        data.forEach((u, i) => {
-            html += `<tr>
-                <td><b>${u.name}</b></td>
-                <td style="font-size: 0.65rem; color:#475569;">${u.desc}</td>
-                <td id="${id}-c-${i}" style="color:${isExp?'var(--exp)':'var(--accent)'}; font-weight:bold;">${format(cArr[i], 2)}</td>
-                <td><button class="btn-buy ${isExp?'btn-exp-buy':''}" id="${id}-b-${i}" onclick="buyUpg('${id}', ${i})">구매</button></td>
-            </tr>`;
+    function buyUpgrade(row, idx) {
+        let upg = UPGRADES[row][idx];
+        let cost = getPrice(upg.base, upg.count, upg.mult);
+        if (state.x.gte(cost)) {
+            state.x = state.x.sub(cost);
+            upg.run();
+            upg.count++;
+            renderUpgrades();
+        }
+    }
+
+    function renderUpgrades() {
+        ['row1', 'row2'].forEach(rowId => {
+            let html = "";
+            UPGRADES[rowId].forEach((u, i) => {
+                let cost = getPrice(u.base, u.count, u.mult);
+                html += `<div class="upg-card">
+                    <div style="font-weight:bold; font-size:0.8rem;">${u.name}</div>
+                    <div style="font-size:0.7rem; color:#888;">${u.desc}</div>
+                    <button id="btn-${rowId}-${i}" onclick="buyUpgrade('${rowId}', ${i})">
+                        ${format(cost, 2)} X
+                    </button>
+                </div>`;
+            });
+            document.getElementById(rowId + '-upgs').innerHTML = html;
         });
-        document.getElementById(id).innerHTML = html;
     }
 
-    function buildChals() {
-        let html = "";
-        CHALS.forEach((c, i) => {
-            let status = state.chalCompletions[i] ? "완료됨" : (state.activeChal === i ? "포기" : "도전 시작");
-            let bg = state.chalCompletions[i] ? "#dcfce7" : "#fffaf0";
-            html += `<div class="chal-card" style="background:${bg}">
-                <b>${c.name}</b><br><span style="font-size:0.75rem;">${c.desc}</span><br>
-                <span style="font-size:0.75rem; color:var(--chal); font-weight:bold;">보상: ${c.reward}</span>
-                <button class="btn-buy" style="margin-top:8px; background:var(--chal);" onclick="toggleChal(${i})">${status}</button>
-            </div>`;
-        });
-        document.getElementById('chal-list').innerHTML = html;
+    function format(d, p = 4) {
+        if (d.lt(1000)) return d.toNumber().toFixed(p);
+        return d.toExponential(2).replace("+", "");
     }
 
-    function init() {
-        buildTable('main-upgs', M_UPGS, costsM);
-        buildTable('mini-upgs', MINI_UPGS, costsMini);
-        buildTable('exp-upgs', EXP_UPGS, costsExp, true);
-        buildChals();
-        requestAnimationFrame(loop);
-    }
-
-    function doClick() {
-        let pwr = state.cMult;
-        if(state.chalCompletions[0]) pwr = pwr.mul(10);
-        state.y = state.y.add(pwr);
-        updateUI();
-    }
-
-    function hitMinigame() {
-        let center = 50;
-        let half = state.miniWidth / 2;
-        if (state.pointerPos >= center - half && state.pointerPos <= center + half) {
-            let reward = state.cMult.mul(state.miniMult);
-            state.y = state.y.add(reward);
-            
-            let p = document.getElementById('mini-pointer');
-            p.style.background = "#10b981";
-            setTimeout(()=> p.style.background = "#ef4444", 150);
-        }
-    }
-
-    // 업그레이드 비용 차감 (X가 즉시 깎이지만, 공식에 의해 다음 틱에 바로 복구됨 -> 한계점 돌파 연출)
-    function buyUpg(type, i) {
-        if(type === 'main-upgs' && state.x.gte(costsM[i])) {
-            state.x = state.x.sub(costsM[i]);
-            M_UPGS[i].run();
-            costsM[i] = costsM[i].add(M_UPGS[i].add); // 덧셈 기반의 쉬운 스케일링
-        }
-        else if(type === 'mini-upgs' && state.x.gte(costsMini[i])) {
-            state.x = state.x.sub(costsMini[i]);
-            MINI_UPGS[i].run();
-            costsMini[i] = costsMini[i].add(MINI_UPGS[i].add);
-        }
-        else if(type === 'exp-upgs' && state.exp.gte(costsExp[i])) {
-            let u = EXP_UPGS[i];
-            if(u.max && u.lvl >= u.max) return;
-            state.exp = state.exp.sub(costsExp[i]);
-            u.lvl++;
-            u.run();
-            costsExp[i] = costsExp[i].add(u.add);
-        }
-        updateUI();
-    }
-
-    function toggleChal(i) {
-        if (state.activeChal === i) {
-            if (state.x.gte(CHALS[i].goal)) state.chalCompletions[i] = true;
-            state.activeChal = -1;
-            doReset(false);
-        } else {
-            state.activeChal = i;
-            doReset(false);
-        }
-        buildChals();
-    }
-
-    function doPrestige() {
-        if (state.x.lt(10)) return;
-        let gain = state.x.sub(9).floor().max(1); // X 10일때 1개, 11일때 2개...
-        state.exp = state.exp.add(gain);
-        doReset(true);
-    }
-
-    function doReset(isPrestige) {
-        // 리셋 시 y 기본값 10 보장 (0 수렴 버그 방지)
-        state.y = EXP_UPGS[0].lvl > 0 ? D(1000) : D(10);
-        state.x = D(1); 
-        state.z = D(1); state.a = D(1); state.b = D(2); state.c = D(0); state.base = D(10);
-        state.cMult = D(1); state.yAuto = D(0);
-        
-        if(state.chalCompletions[1]) state.a = state.a.add(1);
-
-        if(isPrestige) {
-            costsM = M_UPGS.map(u => D(u.cost));
-            costsMini = MINI_UPGS.map(u => D(u.cost));
-            // EXP 효과 재적용
-            if(EXP_UPGS[1].lvl > 0) state.a = state.a.add(0.5 * EXP_UPGS[1].lvl);
-            if(EXP_UPGS[2].lvl > 0) state.z = state.z.add(2 * EXP_UPGS[2].lvl);
-            if(EXP_UPGS[3].lvl > 0) state.cMult = state.cMult.mul(Math.pow(5, EXP_UPGS[3].lvl));
-        }
-        updateUI();
-    }
-
-    // 메인 루프 (수렴 엔진)
     function loop() {
         let now = Date.now();
         let dt = (now - state.lastTick) / 1000;
         state.lastTick = now;
 
-        // 자동 Y 증가
-        state.y = state.y.add(state.yAuto.mul(dt));
+        // 에너지 증가 (미니게임 보너스 반영)
+        let bonus = 1 + state.bestScore / 100;
+        state.y = state.y.add(state.yAuto.mul(dt).mul(bonus));
 
-        // 도전 패널티 적용
-        let actualB = state.activeChal === 0 ? D(1) : state.b;
-        let actualC = state.activeChal === 0 ? D(0) : state.c;
-        let actualA = state.activeChal === 1 ? D(0) : state.a;
+        // [방정식 수렴 엔진]
+        let inner = state.x.mul(state.z).pow(state.a).mul(state.b.pow(state.c)).add(state.y);
+        let resultX = inner.ln().div(state.base.ln());
 
-        // 복합 방정식 평가: inner = (x * z)^a * (b^c) + y
-        let x_z_a = state.x.mul(state.z).pow(actualA);
-        let b_c = Decimal.pow(actualB, actualC);
-        let inner = x_z_a.mul(b_c).add(state.y);
+        // [소프트캡 로직]
+        // x가 5를 넘으면 그 이후의 증가는 제곱근 처리되어 매우 느려짐
+        let softcapStart = D(5);
+        if (resultX.gt(softcapStart)) {
+            resultX = softcapStart.add(resultX.sub(softcapStart).pow(0.5));
+            document.getElementById('softcap-notice').style.display = "block";
+            document.getElementById('softcap-formula').innerText = `Softcap: 5 + (x-5)^0.5`;
+        } else {
+            document.getElementById('softcap-notice').style.display = "none";
+            document.getElementById('softcap-formula').innerText = "";
+        }
 
-        // 공식 안전성 (1 미만으로 떨어져 음수 로그가 되는 것 방지)
-        if (inner.lt(1)) inner = D(1);
+        state.x = resultX;
 
-        // 수렴 적용: 현재 공식의 결과를 X에 덮어씌움
-        state.x = inner.ln().div(state.base.ln());
-
-        // 미니게임 포인터 이동
-        state.pointerPos += state.miniSpeed * state.pointerDir * (dt * 60);
-        if(state.pointerPos > 100) { state.pointerPos = 100; state.pointerDir = -1; }
-        if(state.pointerPos < 0) { state.pointerPos = 0; state.pointerDir = 1; }
-        
-        document.getElementById('mini-pointer').style.left = state.pointerPos + "%";
-        document.getElementById('mini-target').style.width = state.miniWidth + "%";
-        document.getElementById('mini-target').style.left = (50 - state.miniWidth/2) + "%";
-
+        updateFlappy();
+        drawFlappy();
         updateUI();
         requestAnimationFrame(loop);
     }
 
     function updateUI() {
-        document.getElementById('x-val').innerText = format(state.x, 4);
-        document.getElementById('y-val').innerText = format(state.y, 1);
+        document.getElementById('x-display').innerText = format(state.x);
+        document.getElementById('y-display').innerText = format(state.y, 1);
         
-        let pwr = state.cMult;
-        if(state.chalCompletions[0]) pwr = pwr.mul(10);
-        document.getElementById('c-val').innerText = format(pwr, 1);
-
-        if(state.yAuto.gt(0)) {
-            document.getElementById('y-auto-disp').innerText = `(+${format(state.yAuto, 1)}/s)`;
-        } else {
-            document.getElementById('y-auto-disp').innerText = "";
-        }
-
-        // 공식 UI 업데이트
-        let actualB = state.activeChal === 0 ? D(1) : state.b;
-        let actualC = state.activeChal === 0 ? D(0) : state.c;
-        let actualA = state.activeChal === 1 ? D(0) : state.a;
-
-        document.getElementById('f-base').innerText = format(state.base, 2);
-        document.getElementById('f-z').innerText = format(state.z, 1);
-        document.getElementById('f-a').innerText = format(actualA, 2);
-        document.getElementById('f-b').innerText = format(actualB, 1);
-        document.getElementById('f-c').innerText = format(actualC, 1);
-
-        // 버튼 비활성화 상태 갱신
-        M_UPGS.forEach((u, i) => {
-            document.getElementById(`main-upgs-c-${i}`).innerText = format(costsM[i], 2);
-            document.getElementById(`main-upgs-b-${i}`).disabled = state.x.lt(costsM[i]);
+        ['row1', 'row2'].forEach(rowId => {
+            UPGRADES[rowId].forEach((u, i) => {
+                let btn = document.getElementById(`btn-${rowId}-${i}`);
+                if (btn) btn.disabled = state.x.lt(getPrice(u.base, u.count, u.mult));
+            });
         });
-        MINI_UPGS.forEach((u, i) => {
-            document.getElementById(`mini-upgs-c-${i}`).innerText = format(costsMini[i], 2);
-            document.getElementById(`mini-upgs-b-${i}`).disabled = state.x.lt(costsMini[i]);
-        });
-        EXP_UPGS.forEach((u, i) => {
-            let btn = document.getElementById(`exp-upgs-b-${i}`);
-            document.getElementById(`exp-upgs-c-${i}`).innerText = format(costsExp[i], 0);
-            if(u.max && u.lvl >= u.max) { btn.innerText = "MAX"; btn.disabled = true; }
-            else { btn.innerText = "구매"; btn.disabled = state.exp.lt(costsExp[i]); }
-        });
-
-        // 리셋 버튼 UI
-        if(state.x.gte(10)) {
-            document.getElementById('pending-exp').innerText = format(state.x.sub(9).floor(), 0);
-            document.getElementById('prestige-btn').style.opacity = "1";
-        } else {
-            document.getElementById('pending-exp').innerText = "0";
-            document.getElementById('prestige-btn').style.opacity = "0.5";
-        }
-        document.getElementById('exp-val').innerText = format(state.exp, 0);
     }
 
-    init();
+    renderUpgrades();
+    loop();
 </script>
 </body>
 </html>
