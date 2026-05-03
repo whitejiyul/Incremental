@@ -137,6 +137,7 @@
         if (frame % 80 === 0) pipes.push({ x: 300, y: Math.random() * 200 + 50 });
         pipes.forEach(p => p.x -= 3);
         pipes = pipes.filter(p => p.x > -50);
+        score = score + 1;
         
         // 충돌 판정
         if (bird.y > 400 || bird.y < 0) endGame();
