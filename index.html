@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Portal Puzzle - Masterpiece Edition</title>
+    <title>Portal Puzzle - Version 1.2</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Noto+Sans+KR:wght@500;700&display=swap');
 
@@ -14,8 +14,8 @@
         /* 메인 메뉴 */
         #menu-screen { position: absolute; top:0; left:0; width:100%; height:100%; background: radial-gradient(circle at center, #1a1a2e 0%, #050508 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; transition: opacity 0.3s; }
         .menu-title { font-family: 'Orbitron', sans-serif; font-size: 38px; font-weight: 700; color: #00d2ff; text-shadow: 0 0 15px #00d2ff, 3px 3px 0px #ff7700; margin-bottom: 40px; text-align: center; line-height: 1.2; letter-spacing: 2px; }
-        .menu-title span { font-family: 'Noto Sans KR', sans-serif; font-size: 14px; color: #a0a0b0; text-shadow: none; letter-spacing: 0; }
-        .menu-btn { background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 16px 30px; font-size: 16px; border-radius: 12px; margin: 8px; width: 240px; text-align: center; cursor: pointer; transition: all 0.2s; backdrop-filter: blur(5px); box-sizing: border-box; }
+        .menu-title span { font-family: 'Orbitron', sans-serif; font-size: 16px; color: #ff7700; text-shadow: none; letter-spacing: 2px; background: rgba(255,119,0,0.2); padding: 4px 10px; border-radius: 4px; border: 1px solid #ff7700; }
+        .menu-btn { background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 16px 30px; font-size: 16px; border-radius: 12px; margin: 8px; width: 260px; text-align: center; cursor: pointer; transition: all 0.2s; backdrop-filter: blur(5px); box-sizing: border-box; }
         .menu-btn:active { background: rgba(255,255,255,0.1); transform: scale(0.96); }
         
         /* 헤더 UI */
@@ -59,8 +59,8 @@
 
 <div id="app">
     <div id="menu-screen">
-        <div class="menu-title">PORTAL PUZZLE<br><span>MASTERPIECE EDITION</span></div>
-        <div class="menu-btn" onclick="switchScreen('game', 'campaign')">▶ 캠페인 모드 (10 Levels)</div>
+        <div class="menu-title">PORTAL PUZZLE<br><br><span>VERSION 1.2</span></div>
+        <div class="menu-btn" onclick="switchScreen('game', 'campaign')">▶ 하드코어 캠페인 (10 Maps)</div>
         <div class="menu-btn" onclick="switchScreen('game', 'custom')">⭐ 커스텀 맵 플레이</div>
         <div class="menu-btn" onclick="switchScreen('editor')">🛠 맵 에디터</div>
     </div>
@@ -145,8 +145,7 @@ function switchScreen(target, mode = null) {
         gameState = 'MENU';
     } else if (target === 'game') {
         document.getElementById('game-screen').style.display = 'flex';
-        gameState = 'PLAYING';
-        playMode = mode;
+        gameState = 'PLAYING'; playMode = mode;
         setTimeout(() => {
             resizeCanvases();
             if (mode === 'campaign') initLevel(0);
@@ -157,9 +156,8 @@ function switchScreen(target, mode = null) {
         document.getElementById('editor-screen').style.display = 'flex';
         gameState = 'EDITOR';
         setTimeout(() => {
-            resizeCanvases();
-            resizeEditorGrid(true);
-            edCam.x = (edCols * TILE) / 2; edCam.y = (edRows * TILE) / 2; edCam.zoom = 1.5;
+            resizeCanvases(); resizeEditorGrid(true);
+            edCam.x = (edCols * TILE) / 2; edCam.y = (edRows * TILE) / 2; edCam.zoom = 1;
             drawEditor();
         }, 50);
     }
@@ -174,7 +172,7 @@ function resizeCanvases() {
 window.addEventListener('resize', resizeCanvases);
 
 // ==========================================
-// 핵심 물리 및 변수
+// 물리 엔진
 // ==========================================
 const GRAVITY = 0.22, MAX_FALL_SPEED = 18, TILE = 20;
 const keys = { left: false, right: false, jump: false };
@@ -191,114 +189,128 @@ let walls = [], stellars = [], spikes = [], movers = [], goal = {x:0, y:0};
 function createEmptyGrid(w, h) { return Array(h).fill().map(() => Array(w).fill(0)); }
 
 // ==========================================
-// 신규 하드코어 맵 10종 설계 (작고 복잡하게)
+// 1.2 버전: 작고 하드코어한 기믹 맵 10개 세트
 // ==========================================
 const levels = [
-    {   // Level 1: 튜토리얼 (15x15)
-        w: 15, h: 15,
-        build: function() {
-            let g = createEmptyGrid(15, 15);
-            for(let i=0;i<15;i++){g[0][i]=1;g[14][i]=1;g[i][0]=1;g[i][14]=1;}
-            for(let i=5;i<14;i++) g[i][7]=1; // 가운데 벽
-            g[13][3]=2; g[13][11]=3; return g;
+    {   // Map 1: The Drop (가속도 기초)
+        w: 12, h: 16, build: () => {
+            let g = createEmptyGrid(12, 16);
+            for(let c=0;c<12;c++){ g[0][c]=1; g[15][c]=1; if(c>3 && c<9) g[14][c]=5; } // 바닥 스파이크
+            for(let r=0;r<16;r++){ g[r][0]=1; g[r][11]=1; }
+            g[4][1]=1; g[4][2]=1; g[4][3]=1; // 시작 플랫폼
+            g[10][8]=1; g[10][9]=1; g[10][10]=1; // 목표 플랫폼
+            g[3][2]=2; g[9][9]=3; return g;
         }
     },
-    {   // Level 2: 수직 낙하 관성 (12x20)
-        w: 12, h: 20,
-        build: function() {
-            let g = createEmptyGrid(12, 20);
-            for(let i=0;i<12;i++){g[0][i]=1;g[19][i]=1;} for(let i=0;i<20;i++){g[i][0]=1;g[i][11]=1;}
-            for(let i=1;i<5;i++) g[10][i]=1; // 시작 플랫폼
-            for(let i=7;i<11;i++) g[15][i]=1; // 목표 플랫폼
-            for(let i=1;i<11;i++) g[18][i]=5; // 바닥 스파이크
-            g[9][2]=2; g[14][9]=3; return g;
+    {   // Map 2: Thread the Needle (스텔라 틈새)
+        w: 16, h: 12, build: () => {
+            let g = createEmptyGrid(16, 12);
+            for(let c=0;c<16;c++){ g[0][c]=1; g[11][c]=1; g[10][c]=5;} // 바닥 스파이크
+            for(let r=0;r<12;r++){ g[r][0]=1; g[r][15]=1; g[r][8]=4; } // 중앙 스텔라 벽
+            g[7][8] = 0; // 단 한 칸의 총알 구멍
+            g[8][2]=1; g[8][3]=1; g[7][2]=2; 
+            g[8][12]=1; g[8][13]=1; g[7][13]=3; return g;
         }
     },
-    {   // Level 3: 바늘구멍 사격 (15x15)
-        w: 15, h: 15,
-        build: function() {
-            let g = createEmptyGrid(15, 15);
-            for(let i=0;i<15;i++){g[0][i]=1;g[14][i]=1;g[i][0]=1;g[i][14]=1;}
-            for(let i=1;i<14;i++){ if(i!==7 && i!==8) g[i][7]=4; } // 스텔라 벽에 2칸 틈새
-            g[13][3]=2; g[13][11]=3; return g;
+    {   // Map 3: The Crusher Room (이동 블록과 스파이크)
+        w: 14, h: 14, build: () => {
+            let g = createEmptyGrid(14, 14);
+            for(let c=0;c<14;c++){ g[0][c]=1; g[13][c]=1; g[12][c]=5; } // 바닥 스파이크
+            for(let r=0;r<14;r++){ g[r][0]=1; g[r][13]=1; }
+            g[11][2]=1; g[10][2]=2;
+            g[5][11]=1; g[4][11]=3;
+            g[10][6]=7; g[10][8]=7; // 위아래로 움직이는 압사 블록
+            return g;
         }
     },
-    {   // Level 4: 분쇄기 (15x15)
-        w: 15, h: 15,
-        build: function() {
-            let g = createEmptyGrid(15, 15);
-            for(let i=0;i<15;i++){g[0][i]=1;g[14][i]=1;g[i][0]=1;g[i][14]=1;}
-            g[10][4]=6; g[10][10]=6; g[5][7]=7; // 움직이는 벽돌
-            g[13][2]=2; g[13][12]=3; return g;
+    {   // Map 4: Velocity (초가속 요구)
+        w: 14, h: 20, build: () => {
+            let g = createEmptyGrid(14, 20);
+            for(let c=0;c<14;c++){ g[0][c]=1; g[19][c]=1; }
+            for(let r=0;r<20;r++){ g[r][0]=1; g[r][13]=1; }
+            for(let r=1;r<15;r++) g[r][6]=4; // 스텔라 벽이 포탈각을 제한함
+            g[5][2]=1; g[4][2]=2;
+            g[5][11]=1; g[4][11]=3;
+            for(let c=7;c<13;c++) g[18][c]=5; // 목표 아래는 스파이크
+            return g;
         }
     },
-    {   // Level 5: 스파이크 천장 (15x15)
-        w: 15, h: 15,
-        build: function() {
-            let g = createEmptyGrid(15, 15);
-            for(let i=0;i<15;i++){g[0][i]=1;g[14][i]=1;g[i][0]=1;g[i][14]=1;}
-            for(let i=1;i<14;i++) g[13][i]=5; // 바닥 전부 스파이크
-            g[5][7]=1; g[6][7]=1; // 공중에 뜬 벽
-            g[3][2]=2; g[3][12]=3; return g;
+    {   // Map 5: Astral Prison (스텔라 감옥)
+        w: 16, h: 16, build: () => {
+            let g = createEmptyGrid(16, 16);
+            for(let c=0;c<16;c++){ g[0][c]=1; g[15][c]=1; }
+            for(let r=0;r<16;r++){ g[r][0]=1; g[r][15]=1; }
+            for(let c=2;c<8;c++) { g[2][c]=4; g[8][c]=4; } // 박스 상하
+            for(let r=2;r<=8;r++) { g[r][2]=4; g[r][7]=4; } // 박스 좌우
+            g[8][5]=0; // 틈새
+            g[7][4]=2; // 감옥 안에서 시작
+            g[13][12]=1; g[12][12]=3; // 밖이 목표
+            for(let c=1;c<15;c++) g[14][c]=5; // 바닥 스파이크
+            g[12][5]=6; // 발판용 좌우 이동 블록
+            return g;
         }
     },
-    {   // Level 6: 좁은 수직 미로 (12x22)
-        w: 12, h: 22,
-        build: function() {
-            let g = createEmptyGrid(12, 22);
-            for(let i=0;i<12;i++){g[0][i]=1;g[21][i]=1;} for(let i=0;i<22;i++){g[i][0]=1;g[i][11]=1;}
-            for(let i=1;i<8;i++) g[6][i]=4; // 스텔라
-            for(let i=4;i<11;i++) g[12][i]=1; // 일반벽
-            for(let i=1;i<8;i++) g[18][i]=4; // 스텔라
-            g[2][2]=2; g[20][2]=3; return g;
+    {   // Map 6: Mid-air Snipe (공중 사격)
+        w: 12, h: 24, build: () => {
+            let g = createEmptyGrid(12, 24);
+            for(let c=0;c<12;c++){ g[0][c]=1; g[23][c]=1; g[22][c]=5; }
+            for(let r=0;r<24;r++){ g[r][0]=1; g[r][11]=1; }
+            for(let c=1;c<8;c++) g[6][c]=4;  // 스텔라 층 1
+            for(let c=4;c<11;c++) g[12][c]=4; // 스텔라 층 2
+            for(let c=1;c<8;c++) g[18][c]=4;  // 스텔라 층 3
+            g[2][2]=2; g[21][9]=3; g[22][9]=1; g[22][8]=1; g[22][10]=1; // 안전한 목표지점
+            return g;
         }
     },
-    {   // Level 7: 무한의 방 (15x18)
-        w: 15, h: 18,
-        build: function() {
-            let g = createEmptyGrid(15, 18);
-            for(let i=0;i<15;i++){g[0][i]=1;g[17][i]=1;} for(let i=0;i<18;i++){g[i][0]=1;g[i][14]=1;}
-            for(let i=1;i<10;i++) g[i][7]=1; // 상단 벽
-            for(let i=10;i<17;i++) g[i][7]=4; // 하단 스텔라
-            g[16][3]=2; g[16][11]=3; return g;
+    {   // Map 7: The Gauntlet (미로와 압사)
+        w: 18, h: 14, build: () => {
+            let g = createEmptyGrid(18, 14);
+            for(let c=0;c<18;c++){ g[0][c]=1; g[13][c]=1; }
+            for(let r=0;r<14;r++){ g[r][0]=1; g[r][17]=1; }
+            for(let r=1;r<12;r++) { g[r][5]=1; g[r][11]=1; }
+            g[11][5]=0; g[2][11]=0; // 지그재그 길
+            g[12][2]=2; g[12][15]=3;
+            g[12][7]=5; g[12][8]=5; g[12][9]=5; // 중간 스파이크 함정
+            return g;
         }
     },
-    {   // Level 8: 죽음의 박스 (15x15)
-        w: 15, h: 15,
-        build: function() {
-            let g = createEmptyGrid(15, 15);
-            for(let i=0;i<15;i++){g[0][i]=1;g[14][i]=1;g[i][0]=1;g[i][14]=1;}
-            g[12][7]=6; g[8][7]=6; // 방해꾼
-            for(let i=1;i<14;i++){ g[13][i]=5;} g[13][2]=1; g[13][12]=1; // 양끝 빼고 스파이크
-            g[12][2]=2; g[12][12]=3; return g;
+    {   // Map 8: Mover Hell (이동블록 지옥)
+        w: 16, h: 18, build: () => {
+            let g = createEmptyGrid(16, 18);
+            for(let c=0;c<16;c++){ g[0][c]=1; g[17][c]=1; }
+            for(let r=0;r<18;r++){ g[r][0]=1; g[r][15]=1; }
+            for(let c=1;c<15;c++) g[16][c]=5; // 바닥 스파이크
+            g[4][7]=7; g[8][5]=7; g[12][9]=7; // 위아래 이동블록들
+            g[2][2]=2; g[15][13]=1; g[14][13]=3;
+            return g;
         }
     },
-    {   // Level 9: 아스트랄 감옥 (18x18)
-        w: 18, h: 18,
-        build: function() {
-            let g = createEmptyGrid(18, 18);
-            for(let i=0;i<18;i++){g[0][i]=1;g[17][i]=1;g[i][0]=1;g[i][17]=1;}
-            for(let r=4;r<14;r++) {
-                for(let c=4;c<14;c++) {
-                    if(r===4||r===13||c===4||c===13) g[r][c]=4; // 스텔라 박스
-                }
-            }
-            g[4][9]=0; g[13][9]=0; // 틈새 뚫어줌
-            g[9][9]=3; // 감옥 안에 목표
-            g[16][2]=2; return g;
+    {   // Map 9: Upwards (위로 위로)
+        w: 14, h: 22, build: () => {
+            let g = createEmptyGrid(14, 22);
+            for(let c=0;c<14;c++){ g[0][c]=1; g[21][c]=1; }
+            for(let r=0;r<22;r++){ g[r][0]=1; g[r][13]=1; }
+            for(let r=8;r<22;r++) g[r][6]=4; // 스텔라 벽으로 맵 반갈죽
+            g[20][2]=2; // 왼쪽 아래 시작
+            g[3][11]=3; g[4][10]=1; g[4][11]=1; g[4][12]=1; // 오른쪽 위 목표
+            g[10][2]=6; // 발판용 좌우 이동블록
+            return g;
         }
     },
-    {   // Level 10: 최후의 낙하 (15x30)
-        w: 15, h: 30,
-        build: function() {
-            let g = createEmptyGrid(15, 30);
-            for(let i=0;i<15;i++){g[0][i]=1;g[29][i]=1;} for(let i=0;i<30;i++){g[i][0]=1;g[i][14]=1;}
-            for(let i=1;i<28;i++) {
-                if(i%5===0) g[i][3]=7; // 움직이는 벽돌 파티
-                if(i%6===0) g[i][11]=7;
-            }
-            for(let i=1;i<14;i++) g[28][i]=5; // 바닥 전부 용암(스파이크)
-            g[1][7]=2; g[25][12]=3; return g;
+    {   // Map 10: The Core (마지막 시험)
+        w: 20, h: 20, build: () => {
+            let g = createEmptyGrid(20, 20);
+            for(let c=0;c<20;c++){ g[0][c]=1; g[19][c]=1; g[18][c]=5; } // 바닥 스파이크
+            for(let r=0;r<20;r++){ g[r][0]=1; g[r][19]=1; }
+            // 중앙 스텔라 코어
+            for(let c=5;c<15;c++){ g[5][c]=4; g[14][c]=4; }
+            for(let r=5;r<15;r++){ g[r][5]=4; g[r][14]=4; }
+            g[5][10]=0; g[14][10]=0; g[10][5]=0; g[10][14]=0; // 상하좌우 작은 틈
+            g[9][9]=1; g[10][9]=1; g[9][10]=1; g[10][10]=1; // 코어 한가운데 벽
+            g[8][9]=3; // 목표지점은 코어 가장 깊은 곳
+            g[2][2]=2; g[3][2]=1; g[3][1]=1; g[3][3]=1; g[18][2]=1;
+            g[12][2]=7; g[12][17]=7; // 밖에는 이동 블록
+            return g;
         }
     }
 ];
@@ -332,8 +344,8 @@ function loadCustomMap() {
 }
 
 function initLevel(idx) {
-    if (idx >= levels.length) { alert("🏆 10개의 지옥을 모두 클리어했습니다! 포탈 마스터!"); switchScreen('menu'); return; }
-    currentLevel = idx; document.getElementById('level-text').innerText = `LEVEL ${idx + 1}`;
+    if (idx >= levels.length) { alert("🏆 하드코어 캠페인 10개를 모두 클리어했습니다! 진정한 포탈 마스터!"); switchScreen('menu'); return; }
+    currentLevel = idx; document.getElementById('level-text').innerText = `LEVEL ${idx + 1} / 10`;
     parseGridToMap(levels[idx].build());
     resetPlayerToLevel(false, true);
 }
@@ -409,7 +421,7 @@ window.addEventListener('pointerup', (e) => {
 function rectIntersect(r1, r2) { return !(r2.x >= r1.x + r1.w || r2.x + r2.w <= r1.x || r2.y >= r1.y + r1.h || r2.y + r2.h <= r1.y); }
 
 // ==========================================
-// 메인 게임 업데이트 & 렌더링
+// 메인 게임 로직
 // ==========================================
 function updateGame() {
     if (gameState !== 'PLAYING') return;
@@ -640,7 +652,7 @@ function drawGame() {
 }
 
 // ==========================================
-// 맵 에디터 (자체 카메라 및 확대/축소 적용)
+// 맵 에디터
 // ==========================================
 let edCols = 15, edRows = 15;
 let editorGrid = createEmptyGrid(edCols, edRows);
@@ -746,3 +758,4 @@ switchScreen('menu');
 </script>
 </body>
 </html>
+
