@@ -3,266 +3,202 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Log Incremental: Flappy & Softcap</title>
-    <script src="https://cdn.jsdelivr.net/npm/break_eternity.js@2"></script>
+    <title>2D Portal Puzzle</title>
     <style>
-        /* [하얀 테마 설정] */
-        :root { --bg: #ffffff; --text: #333333; --card: #f9f9f9; --border: #eeeeee; --accent: #4a90e2; --softcap: #e74c3c; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { margin: 0; background: #222; color: white; font-family: sans-serif; overflow: hidden; touch-action: none; }
+        #game-container { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; }
+        canvas { background: #000; display: block; max-width: 100%; max-height: 60%; border-bottom: 2px solid #444; }
         
-        /* 상단 대시보드 */
-        .header { padding: 20px; text-align: center; border-bottom: 1px solid var(--border); }
-        #x-display { font-size: 2.5rem; font-weight: bold; color: var(--accent); }
-        #softcap-notice { font-size: 0.8rem; color: var(--softcap); display: none; }
-
-        /* 탭 시스템 */
-        .content { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 80px; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        /* 모바일 컨트롤러 */
+        #controls { width: 100%; flex-grow: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 20px; box-sizing: border-box; }
+        .btn { background: #444; border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 30px; user-select: none; -webkit-user-select: none; }
+        .btn:active { background: #666; }
+        #jump-btn { grid-column: 3; background: #2980b9; }
         
-        /* 하단 메뉴 */
-        .nav { position: fixed; bottom: 0; width: 100%; height: 60px; display: flex; background: white; border-top: 1px solid var(--border); }
-        .nav-btn { flex: 1; border: none; background: none; font-weight: bold; color: #888; }
-        .nav-btn.active { color: var(--accent); border-top: 3px solid var(--accent); }
-
-        /* 업그레이드 Row 디자인 */
-        .upg-row { margin-bottom: 20px; }
-        .upg-row-title { font-size: 0.9rem; font-weight: bold; margin-bottom: 10px; color: #666; border-left: 4px solid var(--accent); padding-left: 8px; }
-        .upg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .upg-card { background: var(--card); padding: 12px; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
-        .upg-card button { width: 100%; margin-top: 8px; padding: 8px; border: none; border-radius: 5px; background: var(--accent); color: white; font-weight: bold; }
-        .upg-card button:disabled { background: #ccc; }
-
-        /* 플러피 미니게임 */
-        #flappy-canvas { background: #e3f2fd; display: block; margin: 0 auto; border-radius: 10px; border: 2px solid #bbdefb; touch-action: none; }
-        .mini-info { text-align: center; margin-bottom: 10px; font-size: 0.9rem; }
-
-        /* 공식 박스 */
-        .formula { background: #f0f0f0; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 0.8rem; text-align: center; margin-bottom: 15px; }
+        #ui { position: absolute; top: 10px; left: 10px; pointer-events: none; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <div style="font-size: 0.9rem; font-weight: bold;">현재 X값</div>
-    <div id="x-display">1.0000</div>
-    <div id="softcap-notice">⚠️ 소프트캡 활성화 (성장 둔화됨)</div>
-    <div style="font-size: 0.9rem; margin-top: 5px;">에너지 Y: <span id="y-display" style="color:var(--accent)">10</span></div>
-</div>
-
-<div class="content">
-    <div id="tab-main" class="tab-content active">
-        <div class="formula">
-            x = log( (x*z)^a * b^c + y ) <br>
-            <span id="softcap-formula" style="color:#e74c3c"></span>
-        </div>
-        
-        <div class="upg-row">
-            <div class="upg-row-title">Row 1: 방정식 변수 강화</div>
-            <div class="upg-grid" id="row1-upgs"></div>
-        </div>
-
-        <div class="upg-row">
-            <div class="upg-row-title">Row 2: 에너지 및 로그 최적화</div>
-            <div class="upg-grid" id="row2-upgs"></div>
-        </div>
+<div id="game-container">
+    <div id="ui">Level: <span id="lvl-num">1</span></div>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="controls">
+        <div class="btn" id="left-btn">◀</div>
+        <div class="btn" id="right-btn">▶</div>
+        <div class="btn" id="jump-btn">JUMP</div>
     </div>
-
-    <div id="tab-mini" class="tab-content">
-        <div class="mini-info">
-            화면을 터치해 날아오르세요!<br>
-            <b>최고 점수: <span id="best-score">0</span></b><br>
-            보너스: Y 생산량 <b>x<span id="mini-bonus">1.00</span></b> 증폭
-        </div>
-        <canvas id="flappy-canvas" width="300" height="400"></canvas>
-        <div style="text-align: center; margin-top: 10px; color: #888; font-size: 0.8rem;">터치하여 시작 / 점프</div>
-    </div>
-</div>
-
-<div class="nav">
-    <button class="nav-btn active" onclick="switchTab('main', this)">메인</button>
-    <button class="nav-btn" onclick="switchTab('mini', this)">미니게임</button>
 </div>
 
 <script>
-    const D = (v) => new Decimal(v);
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const lvlDisp = document.getElementById('lvl-num');
 
-    /* [수정 가능 영역: 게임 밸런스 설정] */
-    let state = {
-        x: D(1), y: D(10), 
-        z: D(1), a: D(1), b: D(2), c: D(0), base: D(10),
-        yAuto: D(0),
-        bestScore: 0,
-        lastTick: Date.now()
-    };
+// 게임 설정
+canvas.width = 400;
+canvas.height = 400;
 
-    // 가격 공식 함수 (중1 수학: y = ax + b 형태)
-    // base: 초기 가격, count: 현재 구매 횟수, mult: 가중치
-    function getPrice(base, count, mult) {
-        return D(base).add(D(count).mul(mult)); 
-        // 만약 기하급수적으로 비싸게 하려면: return D(base).mul(D(mult).pow(count));
+let currentLevel = 0;
+let keys = { left: false, right: false, jump: false };
+
+const player = {
+    x: 50, y: 300, w: 20, h: 20,
+    vx: 0, vy: 0,
+    speed: 3, jumpPower: -8,
+    grounded: false,
+    portalCooldown: 0
+};
+
+// 레벨 디자인 (1: 벽, 2: 포탈A, 3: 포탈B, 4: 골인)
+const levels = [
+    { // Level 1: 입문
+        start: {x: 50, y: 330},
+        walls: [[0,380,400,20], [0,0,20,400], [380,0,20,400], [150,250,100,20]],
+        portals: [{a: {x: 50, y: 350}, b: {x: 200, y: 220}}],
+        goal: {x: 330, y: 330}
+    },
+    { // Level 2: 낙하 활용
+        start: {x: 40, y: 100},
+        walls: [[0,150,150,20], [250,300,150,20], [0,380,400,20]],
+        portals: [{a: {x: 100, y: 350}, b: {x: 300, y: 50}}],
+        goal: {x: 330, y: 250}
+    },
+    { // Level 3: 정교한 점프
+        start: {x: 30, y: 330},
+        walls: [[0,380,100,20], [150,280,100,20], [300,180,100,20], [0,100,100,20]],
+        portals: [{a: {x: 50, y: 70}, b: {x: 350, y: 350}}],
+        goal: {x: 350, y: 130}
+    }
+];
+
+function initLevel(idx) {
+    const l = levels[idx];
+    player.x = l.start.x;
+    player.y = l.start.y;
+    player.vx = 0; player.vy = 0;
+    lvlDisp.innerText = idx + 1;
+}
+
+// 터치 이벤트 등록
+function bindBtn(id, key) {
+    const btn = document.getElementById(id);
+    btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; });
+    btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; });
+    // PC 테스트용
+    btn.addEventListener('mousedown', () => keys[key] = true);
+    btn.addEventListener('mouseup', () => keys[key] = false);
+}
+bindBtn('left-btn', 'left');
+bindBtn('right-btn', 'right');
+bindBtn('jump-btn', 'jump');
+
+function update() {
+    // 이동 로직
+    if (keys.left) player.vx = -player.speed;
+    else if (keys.right) player.vx = player.speed;
+    else player.vx *= 0.8;
+
+    if (keys.jump && player.grounded) {
+        player.vy = player.jumpPower;
+        player.grounded = false;
     }
 
-    // 업그레이드 정의
-    const UPGRADES = {
-        row1: [
-            { id: 'z', name: '변수 Z 증가', desc: 'z + 0.5', base: 1.2, mult: 0.2, run: () => state.z = state.z.add(0.5), count: 0 },
-            { id: 'a', name: '지수 A 강화', desc: 'a + 0.1', base: 2.0, mult: 0.5, run: () => state.a = state.a.add(0.1), count: 0 },
-            { id: 'b', name: '상수 B 강화', desc: 'b + 1.0', base: 1.5, mult: 0.3, run: () => state.b = state.b.add(1.0), count: 0 },
-            { id: 'c', name: '상수 C 강화', desc: 'c + 0.5', base: 1.1, mult: 0.1, run: () => state.c = state.c.add(0.5), count: 0 }
-        ],
-        row2: [
-            { id: 'yAuto', name: '자동 충전', desc: '초당 Y +5', base: 1.3, mult: 0.4, run: () => state.yAuto = state.yAuto.add(5), count: 0 },
-            { id: 'base', name: '로그 효율', desc: '밑 -0.1', base: 3.0, mult: 1.0, run: () => state.base = Decimal.max(1.1, state.base.sub(0.1)), count: 0 }
-        ]
-    };
+    player.vy += 0.4; // 중력
+    player.x += player.vx;
+    player.y += player.vy;
 
-    /* [플러피 미니게임 로직] */
-    const canvas = document.getElementById('flappy-canvas');
-    const ctx = canvas.getContext('2d');
-    let bird = { x: 50, y: 200, v: 0, size: 15 };
-    let pipes = [];
-    let frame = 0;
-    let score = 0;
-    let gameActive = false;
+    const level = levels[currentLevel];
+    player.grounded = false;
 
-    function resetFlappy() {
-        bird.y = 200; bird.v = 0;
-        pipes = []; score = 0; frame = 0;
-    }
-
-    function updateFlappy() {
-        if (!gameActive) return;
-        bird.v += 0.4; bird.y += bird.v;
-        if (frame % 80 === 0) pipes.push({ x: 300, y: Math.random() * 200 + 50 });
-        pipes.forEach(p => p.x -= 3);
-        pipes = pipes.filter(p => p.x > -50);
-        score = score + 1;
-        
-        // 충돌 판정
-        if (bird.y > 400 || bird.y < 0) endGame();
-        pipes.forEach(p => {
-            if (bird.x + bird.size > p.x && bird.x - bird.size < p.x + 40) {
-                if (bird.y - bird.size < p.y - 50 || bird.y + bird.size > p.y + 50) endGame();
+    // 벽 충돌 처리
+    level.walls.forEach(w => {
+        if (player.x < w[0] + w[2] && player.x + player.w > w[0] &&
+            player.y < w[1] + w[3] && player.y + player.h > w[1]) {
+            // 바닥 충돌
+            if (player.vy > 0 && player.y + player.h - player.vy <= w[1]) {
+                player.y = w[1] - player.h;
+                player.vy = 0;
+                player.grounded = true;
+            } 
+            // 천장 충돌
+            else if (player.vy < 0 && player.y - player.vy >= w[1] + w[3]) {
+                player.y = w[1] + w[3];
+                player.vy = 0;
             }
-            if (p.x === 50) score++;
-        });
-        frame++;
-    }
-
-    function drawFlappy() {
-        ctx.clearRect(0, 0, 300, 400);
-        ctx.fillStyle = "#ffeb3b";
-        ctx.beginPath(); ctx.arc(bird.x, bird.y, bird.size, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = "#4caf50";
-        pipes.forEach(p => {
-            ctx.fillRect(p.x, 0, 40, p.y - 50);
-            ctx.fillRect(p.x, p.y + 50, 40, 400);
-        });
-        ctx.fillStyle = "#000"; ctx.font = "20px Arial"; ctx.fillText("Score: " + score, 10, 30);
-    }
-
-    function endGame() {
-        gameActive = false;
-        if (score > state.bestScore) state.bestScore = score;
-        document.getElementById('best-score').innerText = state.bestScore;
-        document.getElementById('mini-bonus').innerText = (1 + state.bestScore / 100).toFixed(2);
-    }
-
-    canvas.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        if (!gameActive) { gameActive = true; resetFlappy(); }
-        bird.v = -6;
+            // 옆면
+            else {
+                player.x -= player.vx;
+            }
+        }
     });
 
-    /* [메인 게임 엔진] */
-    function switchTab(id, btn) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-        document.getElementById('tab-' + id).classList.add('active');
-        btn.classList.add('active');
-    }
-
-    function buyUpgrade(row, idx) {
-        let upg = UPGRADES[row][idx];
-        let cost = getPrice(upg.base, upg.count, upg.mult);
-        if (state.x.gte(cost)) {
-            state.x = state.x.sub(cost);
-            upg.run();
-            upg.count++;
-            renderUpgrades();
+    // 포탈 처리
+    if (player.portalCooldown > 0) player.portalCooldown--;
+    
+    level.portals.forEach(p => {
+        if (player.portalCooldown === 0) {
+            // A로 진입
+            if (Math.hypot(player.x - p.a.x, player.y - p.a.y) < 25) {
+                player.x = p.b.x; player.y = p.b.y;
+                player.portalCooldown = 30;
+            }
+            // B로 진입
+            else if (Math.hypot(player.x - p.b.x, player.y - p.b.y) < 25) {
+                player.x = p.a.x; player.y = p.a.y;
+                player.portalCooldown = 30;
+            }
         }
-    }
+    });
 
-    function renderUpgrades() {
-        ['row1', 'row2'].forEach(rowId => {
-            let html = "";
-            UPGRADES[rowId].forEach((u, i) => {
-                let cost = getPrice(u.base, u.count, u.mult);
-                html += `<div class="upg-card">
-                    <div style="font-weight:bold; font-size:0.8rem;">${u.name}</div>
-                    <div style="font-size:0.7rem; color:#888;">${u.desc}</div>
-                    <button id="btn-${rowId}-${i}" onclick="buyUpgrade('${rowId}', ${i})">
-                        ${format(cost, 2)} X
-                    </button>
-                </div>`;
-            });
-            document.getElementById(rowId + '-upgs').innerHTML = html;
-        });
-    }
-
-    function format(d, p = 4) {
-        if (d.lt(1000)) return d.toNumber().toFixed(p);
-        return d.toExponential(2).replace("+", "");
-    }
-
-    function loop() {
-        let now = Date.now();
-        let dt = (now - state.lastTick) / 1000;
-        state.lastTick = now;
-
-        // 에너지 증가 (미니게임 보너스 반영)
-        let bonus = 1 + state.bestScore / 100;
-        state.y = state.y.add(state.yAuto.mul(dt).mul(bonus));
-
-        // [방정식 수렴 엔진]
-        let inner = state.x.mul(state.z).pow(state.a).mul(state.b.pow(state.c)).add(state.y);
-        let resultX = inner.ln().div(state.base.ln());
-
-        // [소프트캡 로직]
-        // x가 5를 넘으면 그 이후의 증가는 제곱근 처리되어 매우 느려짐
-        let softcapStart = D(5);
-        if (resultX.gt(softcapStart)) {
-            resultX = softcapStart.add(resultX.sub(softcapStart).pow(0.5));
-            document.getElementById('softcap-notice').style.display = "block";
-            document.getElementById('softcap-formula').innerText = `Softcap: 5 + (x-5)^0.5`;
-        } else {
-            document.getElementById('softcap-notice').style.display = "none";
-            document.getElementById('softcap-formula').innerText = "";
+    // 골인 체크
+    if (Math.hypot(player.x - level.goal.x, player.y - level.goal.y) < 20) {
+        currentLevel++;
+        if (currentLevel >= levels.length) {
+            alert("축하합니다! 모든 퍼즐을 풀었습니다.");
+            currentLevel = 0;
         }
-
-        state.x = resultX;
-
-        updateFlappy();
-        drawFlappy();
-        updateUI();
-        requestAnimationFrame(loop);
+        initLevel(currentLevel);
     }
 
-    function updateUI() {
-        document.getElementById('x-display').innerText = format(state.x);
-        document.getElementById('y-display').innerText = format(state.y, 1);
-        
-        ['row1', 'row2'].forEach(rowId => {
-            UPGRADES[rowId].forEach((u, i) => {
-                let btn = document.getElementById(`btn-${rowId}-${i}`);
-                if (btn) btn.disabled = state.x.lt(getPrice(u.base, u.count, u.mult));
-            });
-        });
-    }
+    // 화면 밖으로 떨어짐 방지
+    if (player.y > 500) initLevel(currentLevel);
+}
 
-    renderUpgrades();
-    loop();
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const level = levels[currentLevel];
+
+    // 벽 그리기
+    ctx.fillStyle = '#777';
+    level.walls.forEach(w => ctx.fillRect(...w));
+
+    // 포탈 그리기
+    level.portals.forEach(p => {
+        ctx.strokeStyle = '#00a2ff'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.arc(p.a.x, p.a.y, 15, 0, Math.PI*2); ctx.stroke();
+        ctx.strokeStyle = '#ff9600';
+        ctx.beginPath(); ctx.arc(p.b.x, p.b.y, 15, 0, Math.PI*2); ctx.stroke();
+    });
+
+    // 목적지
+    ctx.fillStyle = '#2ecc71';
+    ctx.beginPath(); ctx.arc(level.goal.x, level.goal.y, 10, 0, Math.PI*2); ctx.fill();
+
+    // 플레이어
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(player.x, player.y, player.w, player.h);
+
+    requestAnimationFrame(() => {
+        update();
+        draw();
+    });
+}
+
+initLevel(0);
+draw();
 </script>
 </body>
 </html>
+
