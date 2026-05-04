@@ -23,7 +23,7 @@
         .header { display: flex; justify-content: space-between; padding: 12px 15px; background: #15151a; border-bottom: 1px solid #2a2a35; align-items: center; flex-shrink: 0; z-index: 10; }
         .level-text { font-family: 'Orbitron', sans-serif; font-weight: bold; color: #fff; font-size: 18px; text-shadow: 0 0 5px rgba(255,255,255,0.5); }
         
-        /* 캔버스 컨테이너 (버그 수정의 핵심) */
+        /* 캔버스 컨테이너 */
         .canvas-container { width: 100%; flex-grow: 1; position: relative; background: #121216; overflow: hidden; }
         canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: none; }
         
@@ -60,7 +60,7 @@
 <div id="app">
     <div id="menu-screen">
         <div class="menu-title">PORTAL PUZZLE<br><span>MASTERPIECE EDITION</span></div>
-        <div class="menu-btn" onclick="switchScreen('game', 'campaign')">▶ 캠페인 모드</div>
+        <div class="menu-btn" onclick="switchScreen('game', 'campaign')">▶ 캠페인 모드 (10 Levels)</div>
         <div class="menu-btn" onclick="switchScreen('game', 'custom')">⭐ 커스텀 맵 플레이</div>
         <div class="menu-btn" onclick="switchScreen('editor')">🛠 맵 에디터</div>
     </div>
@@ -99,8 +99,8 @@
         </div>
         <div id="editor-actions">
             <div style="font-size: 13px; color: #aaa;">
-                W:<input type="number" id="ed-w" class="size-input" value="20">
-                H:<input type="number" id="ed-h" class="size-input" value="20">
+                W:<input type="number" id="ed-w" class="size-input" value="15">
+                H:<input type="number" id="ed-h" class="size-input" value="15">
                 <span class="sys-btn restart-btn" onclick="resizeEditorGrid()">적용</span>
             </div>
             <span class="sys-btn" style="background:#00d2ff; color:#000; padding:8px 15px; border:none;" onclick="saveCustomMap()">💾 저장</span>
@@ -124,7 +124,7 @@
 
 <script>
 // ==========================================
-// 시스템 & 렌더링 초기화 (빈 화면 버그 완벽 수정)
+// 시스템 & 렌더링 초기화
 // ==========================================
 const gCanvas = document.getElementById('gameCanvas');
 const gCtx = gCanvas.getContext('2d', { alpha: false });
@@ -147,7 +147,6 @@ function switchScreen(target, mode = null) {
         document.getElementById('game-screen').style.display = 'flex';
         gameState = 'PLAYING';
         playMode = mode;
-        // 디스플레이가 flex로 바뀐 후 크기를 계산해야 버그가 없음
         setTimeout(() => {
             resizeCanvases();
             if (mode === 'campaign') initLevel(0);
@@ -160,7 +159,7 @@ function switchScreen(target, mode = null) {
         setTimeout(() => {
             resizeCanvases();
             resizeEditorGrid(true);
-            edCam.x = (edCols * TILE) / 2; edCam.y = (edRows * TILE) / 2; edCam.zoom = 1;
+            edCam.x = (edCols * TILE) / 2; edCam.y = (edRows * TILE) / 2; edCam.zoom = 1.5;
             drawEditor();
         }, 50);
     }
@@ -168,18 +167,14 @@ function switchScreen(target, mode = null) {
 
 function resizeCanvases() {
     const gCont = document.getElementById('game-container');
-    if (gCont && gCont.clientWidth > 0) {
-        gCanvas.width = gCont.clientWidth; gCanvas.height = gCont.clientHeight;
-    }
+    if (gCont && gCont.clientWidth > 0) { gCanvas.width = gCont.clientWidth; gCanvas.height = gCont.clientHeight; }
     const eCont = document.getElementById('editor-container');
-    if (eCont && eCont.clientWidth > 0) {
-        eCanvas.width = eCont.clientWidth; eCanvas.height = eCont.clientHeight;
-    }
+    if (eCont && eCont.clientWidth > 0) { eCanvas.width = eCont.clientWidth; eCanvas.height = eCont.clientHeight; }
 }
 window.addEventListener('resize', resizeCanvases);
 
 // ==========================================
-// 핵심 물리 엔진 (관성, 중력, 속도 유지)
+// 핵심 물리 및 변수
 // ==========================================
 const GRAVITY = 0.22, MAX_FALL_SPEED = 18, TILE = 20;
 const keys = { left: false, right: false, jump: false };
@@ -195,10 +190,117 @@ let walls = [], stellars = [], spikes = [], movers = [], goal = {x:0, y:0};
 
 function createEmptyGrid(w, h) { return Array(h).fill().map(() => Array(w).fill(0)); }
 
+// ==========================================
+// 신규 하드코어 맵 10종 설계 (작고 복잡하게)
+// ==========================================
 const levels = [
-    { w: 25, h: 20, build: function() { let g = createEmptyGrid(25, 20); for(let c=0;c<25;c++){ g[0][c]=1; g[19][c]=1; } for(let r=0;r<20;r++){ g[r][0]=1; g[r][24]=1; } g[17][12]=1; g[16][12]=1; g[15][12]=1; g[14][12]=1; g[13][12]=1; g[18][1] = 2; g[18][23] = 3; return g; } },
-    { w: 20, h: 25, build: function() { let g = createEmptyGrid(20, 25); for(let c=0;c<20;c++){ g[0][c]=1; g[24][c]=1; } for(let r=0;r<25;r++){ g[r][0]=1; g[r][19]=1; } for(let c=5;c<15;c++){ g[23][c]=5; } for(let r=10;r<15;r++){ g[r][10]=4; } g[5][5]=1; g[5][6]=1; g[22][2] = 2; g[4][5] = 3; return g; } },
-    { w: 30, h: 20, build: function() { let g = createEmptyGrid(30, 20); for(let c=0;c<30;c++){ g[0][c]=1; g[19][c]=1; } for(let r=0;r<20;r++){ g[r][0]=1; g[r][29]=1; } g[17][10] = 7; g[16][15] = 6; g[18][2] = 2; g[18][27] = 3; return g; } }
+    {   // Level 1: 튜토리얼 (15x15)
+        w: 15, h: 15,
+        build: function() {
+            let g = createEmptyGrid(15, 15);
+            for(let i=0;i<15;i++){g[0][i]=1;g[14][i]=1;g[i][0]=1;g[i][14]=1;}
+            for(let i=5;i<14;i++) g[i][7]=1; // 가운데 벽
+            g[13][3]=2; g[13][11]=3; return g;
+        }
+    },
+    {   // Level 2: 수직 낙하 관성 (12x20)
+        w: 12, h: 20,
+        build: function() {
+            let g = createEmptyGrid(12, 20);
+            for(let i=0;i<12;i++){g[0][i]=1;g[19][i]=1;} for(let i=0;i<20;i++){g[i][0]=1;g[i][11]=1;}
+            for(let i=1;i<5;i++) g[10][i]=1; // 시작 플랫폼
+            for(let i=7;i<11;i++) g[15][i]=1; // 목표 플랫폼
+            for(let i=1;i<11;i++) g[18][i]=5; // 바닥 스파이크
+            g[9][2]=2; g[14][9]=3; return g;
+        }
+    },
+    {   // Level 3: 바늘구멍 사격 (15x15)
+        w: 15, h: 15,
+        build: function() {
+            let g = createEmptyGrid(15, 15);
+            for(let i=0;i<15;i++){g[0][i]=1;g[14][i]=1;g[i][0]=1;g[i][14]=1;}
+            for(let i=1;i<14;i++){ if(i!==7 && i!==8) g[i][7]=4; } // 스텔라 벽에 2칸 틈새
+            g[13][3]=2; g[13][11]=3; return g;
+        }
+    },
+    {   // Level 4: 분쇄기 (15x15)
+        w: 15, h: 15,
+        build: function() {
+            let g = createEmptyGrid(15, 15);
+            for(let i=0;i<15;i++){g[0][i]=1;g[14][i]=1;g[i][0]=1;g[i][14]=1;}
+            g[10][4]=6; g[10][10]=6; g[5][7]=7; // 움직이는 벽돌
+            g[13][2]=2; g[13][12]=3; return g;
+        }
+    },
+    {   // Level 5: 스파이크 천장 (15x15)
+        w: 15, h: 15,
+        build: function() {
+            let g = createEmptyGrid(15, 15);
+            for(let i=0;i<15;i++){g[0][i]=1;g[14][i]=1;g[i][0]=1;g[i][14]=1;}
+            for(let i=1;i<14;i++) g[13][i]=5; // 바닥 전부 스파이크
+            g[5][7]=1; g[6][7]=1; // 공중에 뜬 벽
+            g[3][2]=2; g[3][12]=3; return g;
+        }
+    },
+    {   // Level 6: 좁은 수직 미로 (12x22)
+        w: 12, h: 22,
+        build: function() {
+            let g = createEmptyGrid(12, 22);
+            for(let i=0;i<12;i++){g[0][i]=1;g[21][i]=1;} for(let i=0;i<22;i++){g[i][0]=1;g[i][11]=1;}
+            for(let i=1;i<8;i++) g[6][i]=4; // 스텔라
+            for(let i=4;i<11;i++) g[12][i]=1; // 일반벽
+            for(let i=1;i<8;i++) g[18][i]=4; // 스텔라
+            g[2][2]=2; g[20][2]=3; return g;
+        }
+    },
+    {   // Level 7: 무한의 방 (15x18)
+        w: 15, h: 18,
+        build: function() {
+            let g = createEmptyGrid(15, 18);
+            for(let i=0;i<15;i++){g[0][i]=1;g[17][i]=1;} for(let i=0;i<18;i++){g[i][0]=1;g[i][14]=1;}
+            for(let i=1;i<10;i++) g[i][7]=1; // 상단 벽
+            for(let i=10;i<17;i++) g[i][7]=4; // 하단 스텔라
+            g[16][3]=2; g[16][11]=3; return g;
+        }
+    },
+    {   // Level 8: 죽음의 박스 (15x15)
+        w: 15, h: 15,
+        build: function() {
+            let g = createEmptyGrid(15, 15);
+            for(let i=0;i<15;i++){g[0][i]=1;g[14][i]=1;g[i][0]=1;g[i][14]=1;}
+            g[12][7]=6; g[8][7]=6; // 방해꾼
+            for(let i=1;i<14;i++){ g[13][i]=5;} g[13][2]=1; g[13][12]=1; // 양끝 빼고 스파이크
+            g[12][2]=2; g[12][12]=3; return g;
+        }
+    },
+    {   // Level 9: 아스트랄 감옥 (18x18)
+        w: 18, h: 18,
+        build: function() {
+            let g = createEmptyGrid(18, 18);
+            for(let i=0;i<18;i++){g[0][i]=1;g[17][i]=1;g[i][0]=1;g[i][17]=1;}
+            for(let r=4;r<14;r++) {
+                for(let c=4;c<14;c++) {
+                    if(r===4||r===13||c===4||c===13) g[r][c]=4; // 스텔라 박스
+                }
+            }
+            g[4][9]=0; g[13][9]=0; // 틈새 뚫어줌
+            g[9][9]=3; // 감옥 안에 목표
+            g[16][2]=2; return g;
+        }
+    },
+    {   // Level 10: 최후의 낙하 (15x30)
+        w: 15, h: 30,
+        build: function() {
+            let g = createEmptyGrid(15, 30);
+            for(let i=0;i<15;i++){g[0][i]=1;g[29][i]=1;} for(let i=0;i<30;i++){g[i][0]=1;g[i][14]=1;}
+            for(let i=1;i<28;i++) {
+                if(i%5===0) g[i][3]=7; // 움직이는 벽돌 파티
+                if(i%6===0) g[i][11]=7;
+            }
+            for(let i=1;i<14;i++) g[28][i]=5; // 바닥 전부 용암(스파이크)
+            g[1][7]=2; g[25][12]=3; return g;
+        }
+    }
 ];
 
 function parseGridToMap(grid) {
@@ -212,9 +314,9 @@ function parseGridToMap(grid) {
             if (v === 1) walls.push({x, y, w:TILE, h:TILE});
             else if (v === 4) stellars.push({x, y, w:TILE, h:TILE});
             else if (v === 5) spikes.push({x, y, w:TILE, h:TILE});
-            else if (v === 6) movers.push({x, y, w:TILE, h:TILE, vx: 2, vy: 0, startX: x, startY: y, range: 60}); 
-            else if (v === 7) movers.push({x, y, w:TILE, h:TILE, vx: 0, vy: 2, startX: x, startY: y, range: 60}); 
-            else if (v === 2) { player.x = x+3; player.y = y+3; } // 벽에 안끼게 시작점 오프셋 조정
+            else if (v === 6) movers.push({x, y, w:TILE, h:TILE, vx: 2, vy: 0, startX: x, startY: y, range: 40}); 
+            else if (v === 7) movers.push({x, y, w:TILE, h:TILE, vx: 0, vy: 2, startX: x, startY: y, range: 40}); 
+            else if (v === 2) { player.x = x+3; player.y = y+3; } 
             else if (v === 3) goal = {x: x+10, y: y+10};
         }
     }
@@ -230,7 +332,7 @@ function loadCustomMap() {
 }
 
 function initLevel(idx) {
-    if (idx >= levels.length) { alert("🏆 캠페인을 모두 클리어했습니다!"); switchScreen('menu'); return; }
+    if (idx >= levels.length) { alert("🏆 10개의 지옥을 모두 클리어했습니다! 포탈 마스터!"); switchScreen('menu'); return; }
     currentLevel = idx; document.getElementById('level-text').innerText = `LEVEL ${idx + 1}`;
     parseGridToMap(levels[idx].build());
     resetPlayerToLevel(false, true);
@@ -332,7 +434,6 @@ function updateGame() {
     });
 
     if (!isDead) {
-        // 물리 개선: 좌우 속도 0.4 적용 (더 정교한 컨트롤)
         let friction = player.grounded ? 0.82 : 0.96; 
         if (keys.left) player.vx -= (player.grounded ? 0.4 : 0.15);
         if (keys.right) player.vx += (player.grounded ? 0.4 : 0.15);
@@ -371,13 +472,12 @@ function updateGame() {
                 if (movingInto) {
                     let speed = Math.hypot(player.vx, player.vy);
                     
-                    // 관성 보존 완벽 구현
                     if (ext.nx !== 0) { 
                         player.vx = ext.nx * Math.max(speed, 4); 
-                        player.vy = -1.5; // 옆으로 나올 때 살짝 띄워줌
+                        player.vy = -1.5; 
                     } else if (ext.ny === -1) { 
                         player.vx *= 0.6; player.vy = -Math.max(speed, 6); 
-                        if (ent.ny === -1 && speed > 5) player.vy *= 1.15; // 무한 낙하 시 증폭
+                        if (ent.ny === -1 && speed > 5) player.vy *= 1.15; 
                     } else { 
                         player.vx *= 0.6; player.vy = Math.max(speed, 2);
                     }
@@ -467,13 +567,11 @@ function updateGame() {
 }
 
 function drawGame() {
-    // 배경 그리드 패턴
     gCtx.fillStyle = '#121216'; gCtx.fillRect(0, 0, gCanvas.width, gCanvas.height);
     
     gCtx.save();
     gCtx.translate(-camera.x, -camera.y); 
     
-    // 격자 무늬
     gCtx.strokeStyle = '#1a1a20'; gCtx.lineWidth = 1;
     for(let i=0; i<mapW; i+=20) { gCtx.beginPath(); gCtx.moveTo(i,0); gCtx.lineTo(i,mapH); gCtx.stroke(); }
     for(let i=0; i<mapH; i+=20) { gCtx.beginPath(); gCtx.moveTo(0,i); gCtx.lineTo(mapW,i); gCtx.stroke(); }
@@ -481,15 +579,13 @@ function drawGame() {
     gCtx.fillStyle = '#2a2a35';
     walls.forEach(w => { gCtx.fillRect(w.x, w.y, w.w, w.h); gCtx.strokeStyle = '#15151a'; gCtx.strokeRect(w.x, w.y, w.w, w.h); });
 
-    // 이동 블록 (경고 무늬)
     gCtx.fillStyle = '#e67e22'; 
     movers.forEach(w => { 
         gCtx.fillRect(w.x, w.y, w.w, w.h); 
         gCtx.fillStyle = '#d35400'; gCtx.fillRect(w.x+2, w.y+2, w.w-4, w.h-4); 
-        gCtx.fillStyle = '#e67e22'; // reset
+        gCtx.fillStyle = '#e67e22'; 
     });
 
-    // 스텔라 블록 (아스트랄 우주 효과)
     stellars.forEach(s => { 
         gCtx.fillStyle = '#0a0a1a'; gCtx.fillRect(s.x, s.y, s.w, s.h);
         let t = Date.now() / 250;
@@ -508,7 +604,6 @@ function drawGame() {
     Object.values(portals).forEach(p => {
         if (!p) return;
         gCtx.fillStyle = p.color; gCtx.shadowColor = p.color; gCtx.shadowBlur = 15;
-        // 포탈 라운딩 처리
         gCtx.beginPath(); gCtx.roundRect ? gCtx.roundRect(p.x, p.y, p.w, p.h, 4) : gCtx.rect(p.x, p.y, p.w, p.h); gCtx.fill(); 
         gCtx.shadowBlur = 0;
         gCtx.fillStyle = '#fff';
@@ -527,13 +622,11 @@ function drawGame() {
         gCtx.shadowBlur = 0;
     });
 
-    // 플레이어
     gCtx.fillStyle = isDead ? '#e74c3c' : '#ffffff'; 
     gCtx.shadowColor = isDead ? 'transparent' : 'rgba(255,255,255,0.5)'; gCtx.shadowBlur = isDead ? 0 : 10;
     gCtx.beginPath(); gCtx.roundRect ? gCtx.roundRect(player.x, player.y, player.w, player.h, 3) : gCtx.fillRect(player.x, player.y, player.w, player.h); gCtx.fill();
     gCtx.shadowBlur = 0;
     
-    // 네비게이션 화살표
     if (!isDead && goal) {
         let dx = goal.x - (player.x + player.w/2); let dy = goal.y - (player.y + player.h/2);
         let angle = Math.atan2(dy, dx);
@@ -547,12 +640,12 @@ function drawGame() {
 }
 
 // ==========================================
-// 맵 에디터
+// 맵 에디터 (자체 카메라 및 확대/축소 적용)
 // ==========================================
-let edCols = 20, edRows = 20;
+let edCols = 15, edRows = 15;
 let editorGrid = createEmptyGrid(edCols, edRows);
 let currentTool = 1; 
-let edCam = { x: 0, y: 0, zoom: 1 };
+let edCam = { x: 0, y: 0, zoom: 1.5 };
 
 function setTool(t, btn) { 
     currentTool = t; 
@@ -562,14 +655,14 @@ function setTool(t, btn) {
 
 function zoomEditor(dir) {
     edCam.zoom *= (dir > 0 ? 1.2 : 1/1.2);
-    edCam.zoom = Math.max(0.4, Math.min(edCam.zoom, 2.5)); 
+    edCam.zoom = Math.max(0.4, Math.min(edCam.zoom, 3)); 
     drawEditor();
 }
 
 function resizeEditorGrid(isInit = false) {
     if(!isInit) { 
-        edCols = parseInt(document.getElementById('ed-w').value)||20; 
-        edRows = parseInt(document.getElementById('ed-h').value)||20; 
+        edCols = parseInt(document.getElementById('ed-w').value)||15; 
+        edRows = parseInt(document.getElementById('ed-h').value)||15; 
         editorGrid = createEmptyGrid(edCols, edRows); 
     }
     drawEditor();
@@ -649,9 +742,7 @@ function saveCustomMap() {
     localStorage.setItem('customPortalMap_v5', JSON.stringify({ grid: editorGrid })); alert("저장 성공!");
 }
 
-// 최초 실행 (메뉴 표시)
 switchScreen('menu');
 </script>
 </body>
 </html>
-
