@@ -3,202 +3,302 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2D Portal Puzzle</title>
+    <title>2D Portal Gun Puzzle</title>
     <style>
-        body { margin: 0; background: #222; color: white; font-family: sans-serif; overflow: hidden; touch-action: none; }
-        #game-container { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; }
-        canvas { background: #000; display: block; max-width: 100%; max-height: 60%; border-bottom: 2px solid #444; }
+        body { margin: 0; background: #111; color: white; font-family: 'Arial', sans-serif; overflow: hidden; touch-action: none; user-select: none; }
+        #game-container { display: flex; flex-direction: column; align-items: center; width: 100vw; height: 100vh; }
         
-        /* 모바일 컨트롤러 */
-        #controls { width: 100%; flex-grow: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 20px; box-sizing: border-box; }
-        .btn { background: #444; border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 30px; user-select: none; -webkit-user-select: none; }
-        .btn:active { background: #666; }
-        #jump-btn { grid-column: 3; background: #2980b9; }
+        /* 상단 UI 및 캔버스 */
+        #header { width: 100%; max-width: 500px; display: flex; justify-content: space-between; padding: 10px 20px; box-sizing: border-box; font-weight: bold; font-size: 18px; }
+        canvas { background: #222; border: 2px solid #444; width: 100%; max-width: 500px; aspect-ratio: 1 / 1; object-fit: contain; }
         
-        #ui { position: absolute; top: 10px; left: 10px; pointer-events: none; }
+        /* 포탈 선택 버튼 */
+        #gun-controls { display: flex; width: 100%; max-width: 500px; gap: 10px; padding: 10px; box-sizing: border-box; }
+        .gun-btn { flex: 1; padding: 15px; text-align: center; font-weight: bold; font-size: 16px; border-radius: 8px; border: 2px solid transparent; opacity: 0.5; transition: 0.2s; }
+        .gun-btn.active { opacity: 1; border-color: white; box-shadow: 0 0 10px currentColor; }
+        #btn-blue { background: #0088ff; color: white; }
+        #btn-orange { background: #ff7700; color: white; }
+
+        /* 이동 컨트롤러 */
+        #move-controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; width: 100%; max-width: 500px; padding: 10px; box-sizing: border-box; flex-grow: 1; }
+        .move-btn { background: #444; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 28px; font-weight: bold; color: #ccc; }
+        .move-btn:active { background: #666; color: white; }
+        #btn-jump { background: #2ecc71; color: white; }
+        #btn-jump:active { background: #27ae60; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="ui">Level: <span id="lvl-num">1</span></div>
-    <canvas id="gameCanvas"></canvas>
-    
-    <div id="controls">
-        <div class="btn" id="left-btn">◀</div>
-        <div class="btn" id="right-btn">▶</div>
-        <div class="btn" id="jump-btn">JUMP</div>
+    <div id="header">
+        <span id="level-text">Level 1 / 7</span>
+        <span id="hint-text" style="color: #aaa; font-size: 14px;">화면을 터치해 포탈 발사!</span>
+    </div>
+
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+    <div id="gun-controls">
+        <div class="gun-btn active" id="btn-blue">파란색 포탈 장전</div>
+        <div class="gun-btn" id="btn-orange">주황색 포탈 장전</div>
+    </div>
+
+    <div id="move-controls">
+        <div class="move-btn" id="btn-left">◀</div>
+        <div class="move-btn" id="btn-right">▶</div>
+        <div class="move-btn" id="btn-jump">JUMP</div>
     </div>
 </div>
 
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const lvlDisp = document.getElementById('lvl-num');
 
-// 게임 설정
-canvas.width = 400;
-canvas.height = 400;
-
+// 게임 상태
 let currentLevel = 0;
-let keys = { left: false, right: false, jump: false };
+let currentGun = 'blue'; // 'blue' or 'orange'
+const keys = { left: false, right: false, jump: false };
 
-const player = {
-    x: 50, y: 300, w: 20, h: 20,
-    vx: 0, vy: 0,
-    speed: 3, jumpPower: -8,
-    grounded: false,
-    portalCooldown: 0
-};
+// 플레이어 설정
+const player = { x: 0, y: 0, w: 16, h: 16, vx: 0, vy: 0, speed: 3.5, jumpPower: -7.5, grounded: false, cooldown: 0 };
 
-// 레벨 디자인 (1: 벽, 2: 포탈A, 3: 포탈B, 4: 골인)
+// 포탈 & 투사체
+const portals = { blue: null, orange: null }; // {x, y, w, h, color, nx, ny}
+let projectiles = []; // 발사된 포탈 탄환
+
+// 맵 데이터 (7단계)
+// walls: [x, y, width, height]
 const levels = [
-    { // Level 1: 입문
-        start: {x: 50, y: 330},
-        walls: [[0,380,400,20], [0,0,20,400], [380,0,20,400], [150,250,100,20]],
-        portals: [{a: {x: 50, y: 350}, b: {x: 200, y: 220}}],
-        goal: {x: 330, y: 330}
+    {   // 1. 기초 사격
+        start: [20, 350], goal: [360, 40],
+        walls: [[0,380,400,20], [0,0,20,400], [380,0,20,400], [0,0,400,20], [300,80,100,20], [200,200,20,180]]
     },
-    { // Level 2: 낙하 활용
-        start: {x: 40, y: 100},
-        walls: [[0,150,150,20], [250,300,150,20], [0,380,400,20]],
-        portals: [{a: {x: 100, y: 350}, b: {x: 300, y: 50}}],
-        goal: {x: 330, y: 250}
+    {   // 2. 바닥에서 천장으로
+        start: [30, 300], goal: [350, 300],
+        walls: [[0,380,400,20], [0,0,20,400], [380,0,20,400], [0,0,400,20], [180,100,40,280], [180,0,40,40]]
     },
-    { // Level 3: 정교한 점프
-        start: {x: 30, y: 330},
-        walls: [[0,380,100,20], [150,280,100,20], [300,180,100,20], [0,100,100,20]],
-        portals: [{a: {x: 50, y: 70}, b: {x: 350, y: 350}}],
-        goal: {x: 350, y: 130}
+    {   // 3. 낙하 가속도 (구덩이)
+        start: [20, 50], goal: [360, 50],
+        walls: [[0,380,400,20], [0,0,20,400], [380,0,20,400], [0,0,400,20], [0,100,100,20], [300,100,100,20], [150,200,100,200]]
+    },
+    {   // 4. 지그재그 방
+        start: [40, 350], goal: [40, 40],
+        walls: [[0,380,400,20], [0,0,20,400], [380,0,20,400], [0,0,400,20], [0,280,300,20], [100,180,300,20], [0,80,300,20]]
+    },
+    {   // 5. 공중 발사 (떨어지면서 쏴야함)
+        start: [50, 50], goal: [350, 150],
+        walls: [[0,380,400,20], [0,0,20,400], [380,0,20,400], [0,0,400,20], [0,100,100,20], [300,200,100,20], [180,150,40,230]]
+    },
+    {   // 6. 감옥 탈출
+        start: [50, 300], goal: [350, 350],
+        walls: [[0,380,400,20], [0,0,20,400], [380,0,20,400], [0,0,400,20], [100,200,20,180], [0,200,120,20], [200,100,20,280]]
+    },
+    {   // 7. 포탈 마스터 (복합 기믹)
+        start: [30, 350], goal: [200, 40],
+        walls: [[0,380,400,20], [0,0,20,400], [380,0,20,400], [0,0,400,20], [100,300,100,20], [250,200,100,20], [50,150,100,20], [150,0,20,100], [230,0,20,100], [150,100,100,20]]
     }
 ];
 
 function initLevel(idx) {
+    if (idx >= levels.length) { alert("🎉 게임 클리어! 당신은 포탈 마스터입니다!"); idx = 0; }
+    currentLevel = idx;
+    document.getElementById('level-text').innerText = `Level ${idx + 1} / 7`;
+    
     const l = levels[idx];
-    player.x = l.start.x;
-    player.y = l.start.y;
+    player.x = l.start[0]; player.y = l.start[1];
     player.vx = 0; player.vy = 0;
-    lvlDisp.innerText = idx + 1;
+    portals.blue = null; portals.orange = null;
+    projectiles = [];
 }
 
-// 터치 이벤트 등록
+// 모바일 & PC 조작 바인딩
 function bindBtn(id, key) {
     const btn = document.getElementById(id);
     btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; });
     btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; });
-    // PC 테스트용
     btn.addEventListener('mousedown', () => keys[key] = true);
     btn.addEventListener('mouseup', () => keys[key] = false);
+    btn.addEventListener('mouseleave', () => keys[key] = false);
 }
-bindBtn('left-btn', 'left');
-bindBtn('right-btn', 'right');
-bindBtn('jump-btn', 'jump');
+bindBtn('btn-left', 'left'); bindBtn('btn-right', 'right'); bindBtn('btn-jump', 'jump');
+
+// 무기 변경
+document.getElementById('btn-blue').addEventListener('pointerdown', () => {
+    currentGun = 'blue';
+    document.getElementById('btn-blue').classList.add('active');
+    document.getElementById('btn-orange').classList.remove('active');
+});
+document.getElementById('btn-orange').addEventListener('pointerdown', () => {
+    currentGun = 'orange';
+    document.getElementById('btn-orange').classList.add('active');
+    document.getElementById('btn-blue').classList.remove('active');
+});
+
+// 캔버스 터치(클릭)하여 포탈 쏘기
+canvas.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const touchX = (e.clientX - rect.left) * scaleX;
+    const touchY = (e.clientY - rect.top) * scaleY;
+
+    // 플레이어 중심에서 터치 위치로 각도 계산
+    const px = player.x + player.w/2;
+    const py = player.y + player.h/2;
+    const angle = Math.atan2(touchY - py, touchX - px);
+    
+    projectiles.push({
+        x: px, y: py,
+        vx: Math.cos(angle) * 15, vy: Math.sin(angle) * 15,
+        color: currentGun
+    });
+});
+
+// AABB 충돌 체크
+function rectIntersect(r1, r2) {
+    return !(r2.x > r1.x + r1.w || r2.x + r2.w < r1.x || r2.y > r1.y + r1.h || r2.y + r2.h < r1.y);
+}
 
 function update() {
-    // 이동 로직
-    if (keys.left) player.vx = -player.speed;
-    else if (keys.right) player.vx = player.speed;
-    else player.vx *= 0.8;
+    const level = levels[currentLevel];
 
-    if (keys.jump && player.grounded) {
-        player.vy = player.jumpPower;
-        player.grounded = false;
-    }
+    // 1. 플레이어 이동
+    if (keys.left) player.vx -= 0.5;
+    if (keys.right) player.vx += 0.5;
+    player.vx *= 0.8; // 마찰력
+    if (Math.abs(player.vx) < 0.1) player.vx = 0;
+    
+    if (keys.jump && player.grounded) { player.vy = player.jumpPower; player.grounded = false; }
+    player.vy += 0.4; // 중력 (최대 낙하속도 제한)
+    if (player.vy > 12) player.vy = 12;
 
-    player.vy += 0.4; // 중력
     player.x += player.vx;
     player.y += player.vy;
-
-    const level = levels[currentLevel];
     player.grounded = false;
+    if (player.cooldown > 0) player.cooldown--;
 
-    // 벽 충돌 처리
+    // 2. 벽 충돌 처리 (단순화된 물리)
+    const pRect = {x: player.x, y: player.y, w: player.w, h: player.h};
     level.walls.forEach(w => {
-        if (player.x < w[0] + w[2] && player.x + player.w > w[0] &&
-            player.y < w[1] + w[3] && player.y + player.h > w[1]) {
-            // 바닥 충돌
-            if (player.vy > 0 && player.y + player.h - player.vy <= w[1]) {
-                player.y = w[1] - player.h;
-                player.vy = 0;
-                player.grounded = true;
-            } 
-            // 천장 충돌
-            else if (player.vy < 0 && player.y - player.vy >= w[1] + w[3]) {
-                player.y = w[1] + w[3];
+        const wRect = {x: w[0], y: w[1], w: w[2], h: w[3]};
+        if (rectIntersect(pRect, wRect)) {
+            // 어느 방향에서 충돌했는지 확인
+            const overlapX = Math.min(pRect.x + pRect.w - wRect.x, wRect.x + wRect.w - pRect.x);
+            const overlapY = Math.min(pRect.y + pRect.h - wRect.y, wRect.y + wRect.h - pRect.y);
+            
+            if (overlapX < overlapY) { // 좌우 충돌
+                if (player.vx > 0) player.x = wRect.x - pRect.w;
+                else player.x = wRect.x + wRect.w;
+                player.vx = 0;
+            } else { // 상하 충돌
+                if (player.vy > 0) { player.y = wRect.y - pRect.h; player.grounded = true; }
+                else player.y = wRect.y + wRect.h;
                 player.vy = 0;
             }
-            // 옆면
-            else {
-                player.x -= player.vx;
-            }
+            pRect.x = player.x; pRect.y = player.y; // 갱신
         }
     });
 
-    // 포탈 처리
-    if (player.portalCooldown > 0) player.portalCooldown--;
-    
-    level.portals.forEach(p => {
-        if (player.portalCooldown === 0) {
-            // A로 진입
-            if (Math.hypot(player.x - p.a.x, player.y - p.a.y) < 25) {
-                player.x = p.b.x; player.y = p.b.y;
-                player.portalCooldown = 30;
+    // 3. 투사체 이동 및 포탈 생성
+    for (let i = projectiles.length - 1; i >= 0; i--) {
+        let proj = projectiles[i];
+        proj.x += proj.vx; proj.y += proj.vy;
+        
+        // 투사체 벽 충돌
+        let hit = false;
+        level.walls.forEach(w => {
+            if (!hit && proj.x > w[0] && proj.x < w[0]+w[2] && proj.y > w[1] && proj.y < w[1]+w[3]) {
+                hit = true;
+                // 포탈 부착면(Normal) 계산 (투사체 역방향 기반 간단 계산)
+                let nx = 0, ny = 0, pw = 4, ph = 4;
+                if (Math.abs(proj.vx) > Math.abs(proj.vy)) { // 수직벽에 부착 (위아래로 긴 포탈)
+                    nx = proj.vx > 0 ? -1 : 1; pw = 6; ph = 24;
+                } else { // 수평벽에 부착 (좌우로 긴 포탈)
+                    ny = proj.vy > 0 ? -1 : 1; pw = 24; ph = 6;
+                }
+                
+                portals[proj.color] = {
+                    x: proj.x - pw/2, y: proj.y - ph/2, w: pw, h: ph, 
+                    nx: nx, ny: ny, color: proj.color === 'blue' ? '#0088ff' : '#ff7700'
+                };
+                projectiles.splice(i, 1);
             }
-            // B로 진입
-            else if (Math.hypot(player.x - p.b.x, player.y - p.b.y) < 25) {
-                player.x = p.a.x; player.y = p.a.y;
-                player.portalCooldown = 30;
-            }
-        }
-    });
-
-    // 골인 체크
-    if (Math.hypot(player.x - level.goal.x, player.y - level.goal.y) < 20) {
-        currentLevel++;
-        if (currentLevel >= levels.length) {
-            alert("축하합니다! 모든 퍼즐을 풀었습니다.");
-            currentLevel = 0;
-        }
-        initLevel(currentLevel);
+        });
     }
 
-    // 화면 밖으로 떨어짐 방지
-    if (player.y > 500) initLevel(currentLevel);
+    // 4. 포탈 텔레포트 처리
+    if (portals.blue && portals.orange && player.cooldown === 0) {
+        checkPortalTeleport(portals.blue, portals.orange);
+        if(player.cooldown === 0) checkPortalTeleport(portals.orange, portals.blue);
+    }
+
+    function checkPortalTeleport(entry, exit) {
+        const pCenter = { x: player.x + player.w/2, y: player.y + player.h/2 };
+        if (pCenter.x > entry.x - 5 && pCenter.x < entry.x + entry.w + 5 &&
+            pCenter.y > entry.y - 5 && pCenter.y < entry.y + entry.h + 5) {
+            
+            // 텔레포트 위치 (출구 포탈에서 살짝 밀어냄)
+            player.x = exit.x + exit.w/2 - player.w/2 + (exit.nx * 15);
+            player.y = exit.y + exit.h/2 - player.h/2 + (exit.ny * 15);
+            
+            // 속도 변환 (낙하 에너지를 보존)
+            let speed = Math.max(Math.hypot(player.vx, player.vy), 5); 
+            player.vx = exit.nx * speed;
+            player.vy = exit.ny * speed;
+            if (exit.ny < 0) player.vy = -Math.abs(speed); // 천장으로 솟구칠 때
+            
+            player.cooldown = 20; // 무한 반복 방지 쿨다운
+        }
+    }
+
+    // 5. 골인 처리
+    if (Math.hypot((player.x+player.w/2) - level.goal[0], (player.y+player.h/2) - level.goal[1]) < 20) {
+        initLevel(currentLevel + 1);
+    }
+
+    // 화면 밖 추락시 재시작
+    if (player.y > 450) initLevel(currentLevel);
 }
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const level = levels[currentLevel];
 
-    // 벽 그리기
-    ctx.fillStyle = '#777';
+    // 벽
+    ctx.fillStyle = '#555';
     level.walls.forEach(w => ctx.fillRect(...w));
 
-    // 포탈 그리기
-    level.portals.forEach(p => {
-        ctx.strokeStyle = '#00a2ff'; ctx.lineWidth = 4;
-        ctx.beginPath(); ctx.arc(p.a.x, p.a.y, 15, 0, Math.PI*2); ctx.stroke();
-        ctx.strokeStyle = '#ff9600';
-        ctx.beginPath(); ctx.arc(p.b.x, p.b.y, 15, 0, Math.PI*2); ctx.stroke();
+    // 포탈
+    Object.values(portals).forEach(p => {
+        if (!p) return;
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 10;
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+        ctx.shadowBlur = 0;
     });
 
-    // 목적지
+    // 골인지점
     ctx.fillStyle = '#2ecc71';
-    ctx.beginPath(); ctx.arc(level.goal.x, level.goal.y, 10, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(level.goal[0], level.goal[1], 15, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#27ae60'; ctx.beginPath(); ctx.arc(level.goal[0], level.goal[1], 8, 0, Math.PI*2); ctx.fill();
+
+    // 투사체
+    projectiles.forEach(p => {
+        ctx.fillStyle = p.color === 'blue' ? '#0088ff' : '#ff7700';
+        ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill();
+    });
 
     // 플레이어
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = 'white';
     ctx.fillRect(player.x, player.y, player.w, player.h);
 
-    requestAnimationFrame(() => {
-        update();
-        draw();
-    });
+    requestAnimationFrame(() => { update(); draw(); });
 }
 
+// 게임 시작
 initLevel(0);
 draw();
 </script>
 </body>
 </html>
-
