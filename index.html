@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Portal Puzzle - Hardcore Physics</title>
+    <title>Portal Puzzle - Perfect Physics</title>
     <style>
         body { margin: 0; background: #0a0a0a; color: white; font-family: 'Arial', sans-serif; overflow: hidden; touch-action: none; user-select: none; display: flex; justify-content: center; align-items: center; height: 100vh; }
         #app { width: 100vw; max-width: 500px; height: 100vh; display: flex; flex-direction: column; background: #151515; position: relative; }
         
         #menu-screen { position: absolute; top:0; left:0; width:100%; height:100%; background: #111; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
-        .menu-title { font-size: 30px; font-weight: bold; color: #0088ff; text-shadow: 2px 2px 0px #ff7700; margin-bottom: 30px; text-align: center; }
+        .menu-title { font-size: 32px; font-weight: bold; color: #0088ff; text-shadow: 2px 2px 0px #ff7700; margin-bottom: 30px; text-align: center; }
         .menu-btn { background: #2a2a2a; color: white; border: 2px solid #444; padding: 15px 30px; font-size: 16px; border-radius: 8px; margin: 8px; width: 220px; text-align: center; cursor: pointer; transition: 0.2s; }
         .menu-btn:active { background: #444; }
         
@@ -35,13 +35,16 @@
         #editor-actions { display: flex; gap: 5px; padding: 10px; }
         .action-btn { flex: 1; padding: 10px; text-align: center; background: #0088ff; border-radius: 5px; font-weight: bold; }
         .sys-btn { background: #e74c3c; padding: 6px 12px; border-radius: 6px; font-size: 13px; color: white; cursor: pointer; }
+        
+        /* 화면 번쩍임 효과 (사망/재시작) */
+        #flash { position: absolute; top:0; left:0; width:100%; height:100%; background: red; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 50; }
     </style>
 </head>
 <body>
 
 <div id="app">
     <div id="menu-screen">
-        <div class="menu-title">PORTAL PUZZLE<br><span style="font-size: 16px; color: #aaa;">Hardcore Physics</span></div>
+        <div class="menu-title">PORTAL PUZZLE<br><span style="font-size: 16px; color: #aaa;">Perfect Physics</span></div>
         <div class="menu-btn" onclick="startGame('campaign')">캠페인 (5스테이지)</div>
         <div class="menu-btn" onclick="startGame('custom')">내 커스텀 맵 플레이</div>
         <div class="menu-btn" onclick="openEditor()">맵 에디터</div>
@@ -53,7 +56,10 @@
             <span id="hint-text" style="color: #00ffcc; font-size: 12px; margin: 0 10px;"></span>
             <span class="sys-btn" onclick="goMenu()">포기</span>
         </div>
-        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <div style="position: relative;">
+            <canvas id="gameCanvas" width="400" height="400"></canvas>
+            <div id="flash"></div>
+        </div>
         <div id="gun-controls">
             <div class="gun-btn active" id="btn-blue">파란색 쏘기</div>
             <div class="gun-btn" id="btn-orange">주황색 쏘기</div>
@@ -85,7 +91,6 @@
 </div>
 
 <script>
-// 기본 설정
 const gameCanvas = document.getElementById('gameCanvas');
 const gCtx = gameCanvas.getContext('2d');
 const editorCanvas = document.getElementById('editorCanvas');
@@ -97,41 +102,25 @@ let currentLevel = 0;
 let currentGun = 'blue';
 let reqAnimFrame;
 
-// 물리 상수 (중력 0.75배 적용 -> 0.3375)
-const GRAVITY = 0.3375;
-const MAX_FALL_SPEED = 25; // 극강의 가속도를 위해 제한 상향
+// [물리 상수 전면 개편]
+const GRAVITY = 0.20; // 중력 대폭 감소 (체공 시간 증가)
+const MAX_FALL_SPEED = 18; 
 const keys = { left: false, right: false, jump: false };
 
-const player = { x: 0, y: 0, w: 14, h: 14, vx: 0, vy: 0, speed: 4, jumpPower: -7.5, grounded: false, cooldown: 0 };
+const player = { x: 0, y: 0, w: 14, h: 14, vx: 0, vy: 0, speed: 3.5, jumpPower: -6.5, grounded: false, cooldown: 0 };
 const portals = { blue: null, orange: null };
 let projectiles = [];
 
-// [압축된 5개의 하드코어 맵]
+// [맵 5종 세트]
 const levels = [
-    { // 1. 거대한 도약 (튜토리얼 겸 가속도)
-        start: [30, 60], goal: [350, 60], hint: "높은 곳에서 떨어져 관성을 얻으세요.",
-        walls: [[0,380,400,20], [0,0,20,400], [380,0,20,400], [0,0,400,20], [150,150,100,250], [0,100,100,20], [300,100,100,20]]
-    },
-    { // 2. 바늘구멍 사격술 (총알만 통과하는 틈새)
-        start: [30, 350], goal: [350, 350], hint: "작은 틈새 사이로 포탈을 쏘세요.",
-        walls: [[0,380,400,20], [0,0,20,400], [380,0,20,400], [0,0,400,20], [200,0,20,250], [200,262,20,118]] // 12px 틈
-    },
-    { // 3. 무한의 우물 (낙하 증폭)
-        start: [200, 50], goal: [350, 200], hint: "바닥과 천장에 쏴서 영원히 떨어지며 속도를 올리세요.",
-        walls: [[0,380,400,20], [0,0,20,400], [380,0,20,400], [0,0,400,20], [100,100,20,280], [280,100,20,280], [300,250,80,20]]
-    },
-    { // 4. 지그재그 추락 (허공 사격)
-        start: [50, 50], goal: [350, 350], hint: "공중에 떨어지는 동안 벽을 맞추세요.",
-        walls: [[0,380,400,20], [0,0,20,400], [380,0,20,400], [0,0,400,20], [0,150,250,20], [150,280,250,20]]
-    },
-    { // 5. 포탈 마스터 (복합 기믹 끝판왕)
-        start: [50, 350], goal: [200, 50], hint: "가속도, 공중 사격, 틈새를 모두 활용하세요.",
-        walls: [[0,380,400,20], [0,0,20,400], [380,0,20,400], [0,0,400,20], [100,250,300,20], [0,150,150,20], [150,150,20,60], [150,222,20,28], [250,150,150,20]] // 12px 틈 포함
-    }
+    { start: [30, 60], goal: [350, 60], hint: "튜토리얼: 바닥으로 떨어지며 벽 포탈로 나오세요.", walls: [[0,380,400,20], [0,0,20,400], [380,0,20,400], [0,0,400,20], [150,150,100,250], [0,100,100,20], [300,100,100,20]] },
+    { start: [30, 350], goal: [350, 350], hint: "총알 틈새: 작은 구멍 사이로 포탈을 쏘세요.", walls: [[0,380,400,20], [0,0,20,400], [380,0,20,400], [0,0,400,20], [200,0,20,250], [200,262,20,118]] },
+    { start: [200, 50], goal: [350, 200], hint: "무한 가속: 위아래로 떨어지며 속도를 극한으로 올려 튕겨나가세요.", walls: [[0,380,400,20], [0,0,20,400], [380,0,20,400], [0,0,400,20], [100,100,20,280], [280,100,20,280], [300,250,80,20]] },
+    { start: [50, 50], goal: [350, 350], hint: "공중 사격: 허공에 떨어지는 동안 옆 벽을 맞추세요.", walls: [[0,380,400,20], [0,0,20,400], [380,0,20,400], [0,0,400,20], [0,150,250,20], [150,280,250,20]] },
+    { start: [50, 350], goal: [200, 50], hint: "최종 시험: 가속도, 공중 사격, 틈새 모두 활용!", walls: [[0,380,400,20], [0,0,20,400], [380,0,20,400], [0,0,400,20], [100,250,300,20], [0,150,150,20], [150,150,20,60], [150,222,20,28], [250,150,150,20]] }
 ];
 let activeLevel = {};
 
-// UI 및 시스템 제어
 function goMenu() {
     gameState = 'MENU';
     document.getElementById('menu-screen').style.display = 'flex';
@@ -143,36 +132,37 @@ function goMenu() {
 function startGame(mode) {
     playMode = mode;
     if (mode === 'custom') {
-        const saved = localStorage.getItem('customPortalMap_v2');
+        const saved = localStorage.getItem('customPortalMap_v3');
         if (!saved) { alert('저장된 맵이 없습니다! 에디터에서 먼저 만들어주세요.'); return; }
         activeLevel = JSON.parse(saved);
     }
-    
     gameState = 'PLAYING';
     document.getElementById('menu-screen').style.display = 'none';
     document.getElementById('game-screen').style.display = 'flex';
     if(mode === 'campaign') initLevel(0);
     else resetPlayerToLevel();
-    
     updateGame();
 }
 
 function initLevel(idx) {
     if (idx >= levels.length) { alert("🏆 전설의 포탈 마스터! 게임을 클리어했습니다!"); goMenu(); return; }
-    currentLevel = idx;
-    activeLevel = levels[idx];
+    currentLevel = idx; activeLevel = levels[idx];
     document.getElementById('level-text').innerText = `Level ${idx + 1} / 5`;
     document.getElementById('hint-text').innerText = activeLevel.hint || "";
     resetPlayerToLevel();
 }
 
-function resetPlayerToLevel() {
+function resetPlayerToLevel(showFlash = false) {
+    if (showFlash) {
+        const flash = document.getElementById('flash');
+        flash.style.opacity = 0.5; setTimeout(() => flash.style.opacity = 0, 200);
+    }
     player.x = activeLevel.start[0]; player.y = activeLevel.start[1];
     player.vx = 0; player.vy = 0; player.cooldown = 0;
     portals.blue = null; portals.orange = null; projectiles = [];
 }
 
-// 조작 이벤트
+// 조작 이벤트 바인딩
 function bindBtn(id, key) {
     const btn = document.getElementById(id);
     const setTrue = (e) => { e.preventDefault(); keys[key] = true; };
@@ -193,20 +183,19 @@ gameCanvas.addEventListener('pointerdown', (e) => {
     const ty = (e.clientY - rect.top) * (gameCanvas.height / rect.height);
     const px = player.x + player.w/2, py = player.y + player.h/2;
     const angle = Math.atan2(ty - py, tx - px);
-    projectiles.push({ x: px, y: py, w: 6, h: 6, vx: Math.cos(angle)*16, vy: Math.sin(angle)*16, color: currentGun });
+    projectiles.push({ x: px, y: py, w: 6, h: 6, vx: Math.cos(angle)*18, vy: Math.sin(angle)*18, color: currentGun });
 });
 
-// AABB 충돌
 function rectIntersect(r1, r2) { return !(r2.x >= r1.x + r1.w || r2.x + r2.w <= r1.x || r2.y >= r1.y + r1.h || r2.y + r2.h <= r1.y); }
 
-// 메인 게임 루프
+// 메인 업데이트
 function updateGame() {
     if (gameState !== 'PLAYING') return;
 
-    // 1. 물리 연산 (중력 & 관성)
-    let friction = player.grounded ? 0.82 : 0.98; // 공중에선 관성 거의 100% 유지
-    if (keys.left) player.vx -= (player.grounded ? 0.6 : 0.3);
-    if (keys.right) player.vx += (player.grounded ? 0.6 : 0.3);
+    // 1. 이동 및 물리
+    let friction = player.grounded ? 0.82 : 0.96; // 공중 마찰력 최소화 (관성 유지)
+    if (keys.left) player.vx -= (player.grounded ? 0.6 : 0.25);
+    if (keys.right) player.vx += (player.grounded ? 0.6 : 0.25);
     player.vx *= friction; 
     
     if (keys.jump && player.grounded) { player.vy = player.jumpPower; player.grounded = false; }
@@ -218,60 +207,71 @@ function updateGame() {
     player.grounded = false;
     if (player.cooldown > 0) player.cooldown--;
 
-    const pRect = {x: player.x, y: player.y, w: player.w, h: player.h};
+    let pRect = {x: player.x, y: player.y, w: player.w, h: player.h};
 
-    // 2. 텔레포트 처리 (가장 먼저 판정하여 부드러운 진입)
+    // 2. 텔레포트 (벽 충돌보다 먼저 계산하여 자연스럽게 진입)
+    let justTeleported = false;
     if (portals.blue && portals.orange && player.cooldown === 0) {
-        checkTeleport(portals.blue, portals.orange);
-        if(player.cooldown === 0) checkTeleport(portals.orange, portals.blue);
+        if (tryTeleport(portals.blue, portals.orange)) justTeleported = true;
+        else if (tryTeleport(portals.orange, portals.blue)) justTeleported = true;
     }
 
-    function checkTeleport(ent, ext) {
-        // 플레이어 중심점이 포탈 내부에 들어오면 텔레포트
-        const cx = player.x + player.w/2, cy = player.y + player.h/2;
-        if (cx >= ent.x && cx <= ent.x + ent.w && cy >= ent.y && cy <= ent.y + ent.h) {
-            
-            // 안전하게 밀어내기 (벽 밖으로)
-            player.x = ext.x + ext.w/2 - player.w/2 + (ext.nx * 14);
-            player.y = ext.y + ext.h/2 - player.h/2 + (ext.ny * 14);
-            
-            // 가속도 로직 (떨어질수록 더 빨리 튀어나감)
-            let speed = Math.hypot(player.vx, player.vy);
-            if (ent.ny !== 0 && ext.ny !== 0) speed *= 1.2; // 위아래 연속 포탈 시 속도 20% 증폭
-            if (speed < 6) speed = 6; // 최소 튀어나가는 힘
-            
-            player.vx = ext.nx * speed;
-            player.vy = ext.ny * speed;
-            if (ext.ny === -1) player.vy = -Math.abs(speed * 1.1); // 위로 솟구칠때 보너스
-            
-            player.cooldown = 10;
-            pRect.x = player.x; pRect.y = player.y; // 좌표 동기화
-        }
-    }
+    function tryTeleport(ent, ext) {
+        // 포탈 인식 범위 (벽 바깥쪽으로 살짝 돌출되게 판정)
+        let hitBox = { x: ent.x + (ent.nx===1?-2:0), y: ent.y + (ent.ny===1?-2:0), w: ent.w + (ent.nx!==0?2:0), h: ent.h + (ent.ny!==0?2:0) };
+        
+        if (rectIntersect(pRect, hitBox)) {
+            // 포탈 방향으로 이동 중인지 확인
+            let movingInto = false;
+            if (ent.nx === -1 && player.vx > 0) movingInto = true; // 오른쪽 벽에 부딪힘
+            if (ent.nx === 1 && player.vx < 0) movingInto = true;  // 왼쪽 벽
+            if (ent.ny === -1 && player.vy > 0) movingInto = true; // 바닥
+            if (ent.ny === 1 && player.vy < 0) movingInto = true;  // 천장
 
-    // 3. 벽 충돌 처리
-    activeLevel.walls.forEach(w => {
-        const wRect = {x: w[0], y: w[1], w: w[2], h: w[3]};
-        if (rectIntersect(pRect, wRect)) {
-            const ox = Math.min(pRect.x + pRect.w - wRect.x, wRect.x + wRect.w - pRect.x);
-            const oy = Math.min(pRect.y + pRect.h - wRect.y, wRect.y + wRect.h - pRect.y);
-            
-            if (ox < oy) {
-                if (player.vx > 0) player.x = wRect.x - pRect.w;
-                else player.x = wRect.x + wRect.w;
-                player.vx = 0;
-            } else {
-                if (player.vy > 0) { player.y = wRect.y - pRect.h; player.grounded = true; }
-                else player.y = wRect.y + wRect.h;
-                player.vy = 0;
+            if (movingInto) {
+                let speed = Math.hypot(player.vx, player.vy);
+                if (ent.ny === -1 && ext.ny === -1) speed *= 1.2; // 바닥에서 바닥으로 떨어질 때 가속 증폭
+                if (speed < 5) speed = 5;
+
+                player.vx = ext.nx * speed;
+                player.vy = ext.ny * speed;
+                if (ext.ny === -1) player.vy = -Math.abs(speed);
+
+                // 출구 포탈 바깥으로 살짝 밀어내어 즉시 재충돌 방지
+                player.x = ext.x + ext.w/2 - player.w/2 + (ext.nx * (player.w/2 + 4));
+                player.y = ext.y + ext.h/2 - player.h/2 + (ext.ny * (player.h/2 + 4));
+
+                player.cooldown = 15;
+                pRect.x = player.x; pRect.y = player.y;
+                return true;
             }
-            pRect.x = player.x; pRect.y = player.y;
         }
-    });
+        return false;
+    }
 
-    // 4. 총알 이동 및 포탈 생성 (벽 끼임 완벽 수정)
+    // 3. 벽 충돌
+    if (!justTeleported) {
+        activeLevel.walls.forEach(w => {
+            const wRect = {x: w[0], y: w[1], w: w[2], h: w[3]};
+            if (rectIntersect(pRect, wRect)) {
+                const ox = Math.min(pRect.x + pRect.w - wRect.x, wRect.x + wRect.w - pRect.x);
+                const oy = Math.min(pRect.y + pRect.h - wRect.y, wRect.y + wRect.h - pRect.y);
+                if (ox < oy) {
+                    if (player.x < wRect.x) player.x = wRect.x - pRect.w; else player.x = wRect.x + wRect.w;
+                    player.vx = 0;
+                } else {
+                    if (player.y < wRect.y) { player.y = wRect.y - pRect.h; player.grounded = true; } else player.y = wRect.y + wRect.h;
+                    player.vy = 0;
+                }
+                pRect.x = player.x; pRect.y = player.y;
+            }
+        });
+    }
+
+    // 4. 투사체 이동 및 정밀한 포탈 생성
     for (let i = projectiles.length - 1; i >= 0; i--) {
         let proj = projectiles[i];
+        let prevX = proj.x; let prevY = proj.y;
         proj.x += proj.vx; proj.y += proj.vy;
         
         let hit = false;
@@ -279,23 +279,24 @@ function updateGame() {
             const wRect = {x: w[0], y: w[1], w: w[2], h: w[3]};
             if (!hit && rectIntersect(proj, wRect)) {
                 hit = true;
+                // 어느 면에 부딪혔는지 명확히 판단
+                let nx=0, ny=0;
+                if (prevX + proj.w <= wRect.x) nx = -1;
+                else if (prevX >= wRect.x + wRect.w) nx = 1;
+                else if (prevY + proj.h <= wRect.y) ny = -1;
+                else if (prevY >= wRect.y + wRect.h) ny = 1;
                 
-                // 역추적하여 충돌 면(Normal) 계산
-                let prevX = proj.x - proj.vx;
-                let hitX = (prevX + proj.w <= wRect.x || prevX >= wRect.x + wRect.w);
-                
-                let nx=0, ny=0, pw=32, ph=8; // 벽과 겹치게 하여 부드러운 인식 유도
-                if (hitX) { nx = proj.vx > 0 ? -1 : 1; pw=8; ph=32; } 
-                else { ny = proj.vy > 0 ? -1 : 1; }
-                
-                // 포탈을 벽 표면에 딱 맞게 배치 (Clamp)
-                let fx, fy;
+                if (nx===0 && ny===0) { nx = proj.vx > 0 ? -1 : 1; } // 예외 처리
+
+                let pw = 30, ph = 30, fx, fy;
                 if (nx !== 0) {
-                    fx = (nx === -1) ? wRect.x - pw/2 : wRect.x + wRect.w - pw/2;
+                    pw = 8; ph = 30; // 벽 포탈 크기
+                    fx = nx === -1 ? wRect.x - pw/2 : wRect.x + wRect.w - pw/2;
                     fy = Math.max(wRect.y, Math.min(proj.y - ph/2, wRect.y + wRect.h - ph));
                 } else {
+                    pw = 30; ph = 8; // 바닥/천장 포탈 크기
                     fx = Math.max(wRect.x, Math.min(proj.x - pw/2, wRect.x + wRect.w - pw));
-                    fy = (ny === -1) ? wRect.y - ph/2 : wRect.y + wRect.h - ph/2;
+                    fy = ny === -1 ? wRect.y - ph/2 : wRect.y + wRect.h - ph/2;
                 }
                 
                 portals[proj.color] = { x: fx, y: fy, w: pw, h: ph, nx: nx, ny: ny, color: proj.color === 'blue' ? '#0088ff' : '#ff7700' };
@@ -304,16 +305,16 @@ function updateGame() {
         });
     }
 
-    // 5. 목표 도달 (부드러운 판정) 및 예외 처리
+    // 5. 골인 및 예외 처리(사망)
     const gRect = { x: activeLevel.goal[0]-8, y: activeLevel.goal[1]-8, w: 16, h: 16 };
     if (rectIntersect(pRect, gRect)) {
         if(playMode === 'campaign') initLevel(currentLevel + 1);
         else { alert("🎉 커스텀 맵 클리어!"); goMenu(); }
     }
     
-    // 맵 밖으로 튕겨 나가거나 추락하면 즉시 재시작 (안전장치)
-    if (player.x < -100 || player.x > 500 || player.y < -100 || player.y > 500) {
-        resetPlayerToLevel();
+    // 화면 밖으로 벗어나면 죽음 효과와 함께 재시작
+    if (player.y > 450 || player.x < -50 || player.x > 450) {
+        resetPlayerToLevel(true);
     }
 
     drawGame();
@@ -323,54 +324,34 @@ function updateGame() {
 function drawGame() {
     gCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
     
-    // 벽
     gCtx.fillStyle = '#333';
-    activeLevel.walls.forEach(w => {
-        gCtx.fillRect(...w);
-        gCtx.strokeStyle = '#222'; gCtx.strokeRect(...w);
-    });
+    activeLevel.walls.forEach(w => { gCtx.fillRect(...w); gCtx.strokeStyle = '#222'; gCtx.strokeRect(...w); });
 
-    // 포탈
     Object.values(portals).forEach(p => {
         if (!p) return;
         gCtx.fillStyle = p.color; gCtx.shadowColor = p.color; gCtx.shadowBlur = 15;
         gCtx.fillRect(p.x, p.y, p.w, p.h); gCtx.shadowBlur = 0;
-        
-        // 포탈 방향 표시 (약간 밝은 선)
         gCtx.fillStyle = 'white';
         if(p.nx !== 0) gCtx.fillRect(p.nx === -1 ? p.x : p.x+p.w-2, p.y, 2, p.h);
         else gCtx.fillRect(p.x, p.ny === -1 ? p.y : p.y+p.h-2, p.w, 2);
     });
 
-    // 골인지점 (빛나는 효과)
     gCtx.fillStyle = '#2ecc71'; gCtx.shadowColor = '#2ecc71'; gCtx.shadowBlur = 10;
-    gCtx.beginPath(); gCtx.arc(activeLevel.goal[0], activeLevel.goal[1], 12, 0, Math.PI*2); gCtx.fill();
-    gCtx.shadowBlur = 0;
+    gCtx.beginPath(); gCtx.arc(activeLevel.goal[0], activeLevel.goal[1], 12, 0, Math.PI*2); gCtx.fill(); gCtx.shadowBlur = 0;
 
-    // 총알
     projectiles.forEach(p => { gCtx.fillStyle = p.color === 'blue' ? '#0088ff' : '#ff7700'; gCtx.fillRect(p.x, p.y, p.w, p.h); });
 
-    // 플레이어
     gCtx.fillStyle = 'white'; gCtx.fillRect(player.x, player.y, player.w, player.h);
 }
 
-
-// --- 맵 에디터 기능 ---
+// 에디터
 let editorGrid = Array(20).fill().map(() => Array(20).fill(0));
 let currentTool = 1; 
 
 function openEditor() {
-    gameState = 'EDITOR';
-    document.getElementById('menu-screen').style.display = 'none';
-    document.getElementById('editor-screen').style.display = 'flex';
-    drawEditor();
+    gameState = 'EDITOR'; document.getElementById('menu-screen').style.display = 'none'; document.getElementById('editor-screen').style.display = 'flex'; drawEditor();
 }
-
-function setTool(t, btn) {
-    currentTool = t;
-    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-}
+function setTool(t, btn) { currentTool = t; document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
 
 let isDrawing = false;
 editorCanvas.addEventListener('pointerdown', (e) => { isDrawing = true; paintGrid(e); });
@@ -379,15 +360,12 @@ editorCanvas.addEventListener('pointerup', () => isDrawing = false);
 
 function paintGrid(e) {
     const rect = editorCanvas.getBoundingClientRect();
-    const cx = (e.clientX - rect.left) * (editorCanvas.width / rect.width);
-    const cy = (e.clientY - rect.top) * (editorCanvas.height / rect.height);
-    const col = Math.floor(cx / 20); const row = Math.floor(cy / 20);
-    
+    const col = Math.floor((e.clientX - rect.left) * (editorCanvas.width / rect.width) / 20); 
+    const row = Math.floor((e.clientY - rect.top) * (editorCanvas.height / rect.height) / 20);
     if(col >= 0 && col < 20 && row >= 0 && row < 20) {
         if (currentTool === 2) { for(let r=0;r<20;r++) for(let c=0;c<20;c++) if(editorGrid[r][c]===2) editorGrid[r][c]=0; }
         if (currentTool === 3) { for(let r=0;r<20;r++) for(let c=0;c<20;c++) if(editorGrid[r][c]===3) editorGrid[r][c]=0; }
-        editorGrid[row][col] = currentTool;
-        drawEditor();
+        editorGrid[row][col] = currentTool; drawEditor();
     }
 }
 
@@ -395,35 +373,29 @@ function drawEditor() {
     eCtx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
     for(let r=0; r<20; r++) {
         for(let c=0; c<20; c++) {
-            const v = editorGrid[r][c];
-            eCtx.strokeStyle = '#333'; eCtx.strokeRect(c*20, r*20, 20, 20);
+            const v = editorGrid[r][c]; eCtx.strokeStyle = '#333'; eCtx.strokeRect(c*20, r*20, 20, 20);
             if (v === 1) { eCtx.fillStyle = '#444'; eCtx.fillRect(c*20, r*20, 20, 20); }
             else if (v === 2) { eCtx.fillStyle = '#0088ff'; eCtx.fillRect(c*20+2, r*20+2, 16, 16); eCtx.fillStyle='white'; eCtx.fillText('S', c*20+6, r*20+15); }
             else if (v === 3) { eCtx.fillStyle = '#2ecc71'; eCtx.beginPath(); eCtx.arc(c*20+10, r*20+10, 8, 0, Math.PI*2); eCtx.fill(); }
         }
     }
 }
-
-function clearEditor() {
-    editorGrid = Array(20).fill().map(() => Array(20).fill(0));
-    drawEditor();
-}
-
+function clearEditor() { editorGrid = Array(20).fill().map(() => Array(20).fill(0)); drawEditor(); }
 function saveCustomMap() {
     let mapData = { start: null, goal: null, walls: [] };
     for(let r=0; r<20; r++) {
         for(let c=0; c<20; c++) {
             if(editorGrid[r][c] === 1) mapData.walls.push([c*20, r*20, 20, 20]);
-            else if(editorGrid[r][c] === 2) mapData.start = [c*20+2, r*20+2]; // 벽에 끼지 않게 오프셋
+            else if(editorGrid[r][c] === 2) mapData.start = [c*20+2, r*20+2];
             else if(editorGrid[r][c] === 3) mapData.goal = [c*20+10, r*20+10];
         }
     }
-    if(!mapData.start || !mapData.goal) { alert("시작점(S)과 목표점(G)을 반드시 배치해야 합니다!"); return; }
-    
-    mapData.walls.push([0,-20,400,20], [0,400,400,20], [-20,0,20,400], [400,0,20,400]);
-    localStorage.setItem('customPortalMap_v2', JSON.stringify(mapData));
-    alert("저장 성공! 메뉴에서 플레이해보세요.");
+    if(!mapData.start || !mapData.goal) { alert("시작(S)과 목표(G)를 반드시 배치하세요!"); return; }
+    // 화면 이탈 방지용 외곽 보이지 않는 벽 (두껍게 처리)
+    mapData.walls.push([0,-100,400,100], [0,400,400,100], [-100,0,100,400], [400,0,100,400]);
+    localStorage.setItem('customPortalMap_v3', JSON.stringify(mapData)); alert("저장 성공!");
 }
 </script>
 </body>
 </html>
+
