@@ -3,44 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Portal Puzzle - Complete Edition</title>
+    <title>Portal Puzzle - Astral Edition</title>
     <style>
-        /* 100dvh를 사용하여 모바일 브라우저 주소창 가림 문제 해결 */
         body { margin: 0; background: #050505; color: white; font-family: 'Arial', sans-serif; overflow: hidden; touch-action: none; user-select: none; display: flex; justify-content: center; align-items: center; height: 100dvh; }
         #app { width: 100vw; max-width: 500px; height: 100dvh; display: flex; flex-direction: column; background: #111; position: relative; }
         
         #menu-screen { position: absolute; top:0; left:0; width:100%; height:100%; background: #0a0a0a; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
-        .menu-title { font-size: 30px; font-weight: bold; color: #0088ff; text-shadow: 2px 2px 0px #ff7700; margin-bottom: 30px; text-align: center; }
+        .menu-title { font-size: 30px; font-weight: bold; color: #0088ff; text-shadow: 2px 2px 0px #ff7700; margin-bottom: 30px; text-align: center; line-height: 1.2; }
         .menu-btn { background: #222; color: white; border: 2px solid #444; padding: 15px 30px; font-size: 16px; border-radius: 8px; margin: 8px; width: 220px; text-align: center; cursor: pointer; }
         .menu-btn:active { background: #444; }
         
         #game-screen, #editor-screen { display: none; flex-direction: column; height: 100%; }
         #header { display: flex; justify-content: space-between; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333; align-items: center; flex-shrink: 0; }
-        #game-canvas-container { width: 100%; flex-grow: 1; max-height: 55vh; position: relative; background: #1c1c1c; overflow: hidden; border-bottom: 2px solid #333; }
-        canvas { display: block; touch-action: none; }
+        .canvas-container { width: 100%; flex-grow: 1; position: relative; background: #1c1c1c; overflow: hidden; border-bottom: 2px solid #333; }
+        canvas { display: block; touch-action: none; width: 100%; height: 100%; }
         
-        #gun-controls { display: flex; padding: 10px; gap: 10px; flex-shrink: 0; }
-        .gun-btn { flex: 1; padding: 12px; text-align: center; font-weight: bold; border-radius: 8px; opacity: 0.3; transition: 0.2s; border: 2px solid transparent; }
+        #gun-controls { display: flex; padding: 8px; gap: 10px; flex-shrink: 0; background: #111; }
+        .gun-btn { flex: 1; padding: 12px; text-align: center; font-weight: bold; border-radius: 8px; opacity: 0.3; transition: 0.2s; border: 2px solid transparent; font-size: 14px;}
         .gun-btn.active { opacity: 1; border-color: white; box-shadow: 0 0 10px currentColor; }
         #btn-blue { background: #0088ff; } #btn-orange { background: #ff7700; }
         
-        #move-controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 10px; padding-bottom: max(10px, env(safe-area-inset-bottom)); flex-shrink: 0; }
-        .move-btn { background: #333; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 26px; font-weight: bold; box-shadow: inset 0 -4px 0 #222; min-height: 60px; }
+        #move-controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 10px; padding-bottom: max(10px, env(safe-area-inset-bottom)); flex-shrink: 0; background: #111; }
+        .move-btn { background: #333; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 26px; font-weight: bold; box-shadow: inset 0 -4px 0 #222; min-height: 55px; }
         .move-btn:active { background: #555; box-shadow: inset 0 0 0 #222; transform: translateY(2px); }
         #btn-jump { background: #2ecc71; box-shadow: inset 0 -4px 0 #27ae60; }
         #btn-jump:active { background: #27ae60; }
 
-        .sys-btn { background: #e74c3c; padding: 6px 10px; border-radius: 6px; font-size: 13px; color: white; cursor: pointer; display: inline-block; margin-left: 5px; }
+        .sys-btn { background: #e74c3c; padding: 6px 10px; border-radius: 6px; font-size: 12px; color: white; cursor: pointer; display: inline-block; margin-left: 5px; font-weight: bold;}
+        .sys-btn:active { opacity: 0.7; }
         .restart-btn { background: #f39c12; }
+        .zoom-btn { background: #3498db; }
         #flash { position: absolute; top:0; left:0; width:100%; height:100%; background: red; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 50; }
 
-        /* 에디터 UI (가림 방지) */
-        #editor-scroll { flex-grow: 1; overflow: hidden; background: #222; position: relative; border-bottom: 2px solid #444; }
+        /* 에디터 UI */
         #editor-tools { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 6px; background: #1a1a1a; padding-bottom: max(6px, env(safe-area-inset-bottom)); flex-shrink: 0; }
         .tool-btn { padding: 10px 0; text-align: center; font-size: 13px; background: #333; border-radius: 5px; border: 1px solid #444; word-break: keep-all; }
         .tool-btn.active { background: #2ecc71; color: black; font-weight: bold; }
         #editor-actions { display: flex; gap: 5px; padding: 8px; background: #111; align-items: center; justify-content: space-between; flex-shrink: 0; }
-        .action-btn { padding: 8px 12px; text-align: center; background: #0088ff; border-radius: 5px; font-size: 13px; font-weight: bold; }
         .size-input { width: 35px; padding: 4px; background: #333; color: white; border: 1px solid #555; text-align: center; }
     </style>
 </head>
@@ -48,7 +47,7 @@
 
 <div id="app">
     <div id="menu-screen">
-        <div class="menu-title">PORTAL PUZZLE<br><span style="font-size: 14px; color: #aaa;">Complete Edition</span></div>
+        <div class="menu-title">PORTAL PUZZLE<br><span style="font-size: 14px; color: #aaa;">Astral Physics Edition</span></div>
         <div class="menu-btn" onclick="startGame('campaign')">캠페인 모드</div>
         <div class="menu-btn" onclick="startGame('custom')">내 커스텀 맵 플레이</div>
         <div class="menu-btn" onclick="openEditor()">맵 에디터</div>
@@ -62,13 +61,13 @@
                 <span class="sys-btn" onclick="goMenu()">나가기</span>
             </div>
         </div>
-        <div id="game-canvas-container">
+        <div class="canvas-container" id="game-container">
             <canvas id="gameCanvas"></canvas>
             <div id="flash"></div>
         </div>
         <div id="gun-controls">
-            <div class="gun-btn active" id="btn-blue">파란색</div>
-            <div class="gun-btn" id="btn-orange">주황색</div>
+            <div class="gun-btn active" id="btn-blue">파란 포탈</div>
+            <div class="gun-btn" id="btn-orange">주황 포탈</div>
         </div>
         <div id="move-controls">
             <div class="move-btn" id="btn-left">◀</div>
@@ -79,30 +78,34 @@
 
     <div id="editor-screen">
         <div id="header">
-            <span>맵 에디터</span>
-            <span class="sys-btn" onclick="goMenu()">나가기</span>
+            <span>에디터</span>
+            <div>
+                <span class="sys-btn zoom-btn" onclick="zoomEditor(1)">확대(+)</span>
+                <span class="sys-btn zoom-btn" onclick="zoomEditor(-1)">축소(-)</span>
+                <span class="sys-btn" onclick="goMenu()">나가기</span>
+            </div>
         </div>
         <div id="editor-actions">
             <div>
                 W:<input type="number" id="ed-w" class="size-input" value="20">
                 H:<input type="number" id="ed-h" class="size-input" value="20">
-                <span class="sys-btn restart-btn" onclick="resizeGrid()">변경</span>
+                <span class="sys-btn restart-btn" onclick="resizeGrid()">맵 변경</span>
             </div>
-            <span class="action-btn" onclick="saveCustomMap()">맵 저장</span>
+            <span class="sys-btn" style="background:#0088ff; padding:8px 12px;" onclick="saveCustomMap()">맵 저장</span>
         </div>
-        <div id="editor-scroll">
+        <div class="canvas-container" id="editor-container">
             <canvas id="editorCanvas"></canvas>
         </div>
         <div id="editor-tools">
             <div class="tool-btn active" onclick="setTool(1, this)">일반 벽</div>
-            <div class="tool-btn" onclick="setTool(4, this)">스텔라(포탈X)</div>
+            <div class="tool-btn" onclick="setTool(4, this)">✨스텔라</div>
             <div class="tool-btn" onclick="setTool(5, this)">스파이크</div>
             <div class="tool-btn" onclick="setTool(6, this)">↔ 이동벽</div>
             <div class="tool-btn" onclick="setTool(7, this)">↕ 이동벽</div>
             <div class="tool-btn" onclick="setTool(2, this)">시작(S)</div>
             <div class="tool-btn" onclick="setTool(3, this)">목표(G)</div>
             <div class="tool-btn" onclick="setTool(0, this)">지우개</div>
-            <div class="tool-btn" id="tool-pan" style="background: #8e44ad; color:white; grid-column: span 4;" onclick="setTool(8, this)">✋ 선택 해제 (화면 스와이프 이동)</div>
+            <div class="tool-btn" style="background: #8e44ad; color:white; grid-column: span 4; font-size:15px;" onclick="setTool(8, this)">✋ 누르고 화면 이동 (Pan)</div>
         </div>
     </div>
 </div>
@@ -116,16 +119,22 @@ const eCtx = editorCanvas.getContext('2d');
 let gameState = 'MENU', playMode = 'campaign', currentLevel = 0, currentGun = 'blue', reqAnimFrame;
 let isDead = false;
 
+// 물리 상수 (좌우 스피드 감속, 관성 조정)
 const GRAVITY = 0.22, MAX_FALL_SPEED = 18, TILE = 20;
 const keys = { left: false, right: false, jump: false };
+
+// 게임 카메라
 let camera = { x: 0, y: 0 };
-let camDrag = { active: false, startX: 0, startY: 0, offsetX: 0, offsetY: 0, isDragging: false }; // 게임 시점 이동
+let camDrag = { active: false, startX: 0, startY: 0, offsetX: 0, offsetY: 0, isDragging: false }; 
+
+// 에디터 카메라 (화면 크기 축소/확장, 자유 이동 지원)
+let edCam = { x: 0, y: 0, zoom: 1 };
+
 let mapW = 400, mapH = 400;
 
-const player = { x: 0, y: 0, w: 14, h: 14, vx: 0, vy: 0, speed: 3.5, jumpPower: -6.5, grounded: false, cooldown: 0 };
+const player = { x: 0, y: 0, w: 14, h: 14, vx: 0, vy: 0, jumpPower: -6.5, grounded: false, cooldown: 0 };
 const portals = { blue: null, orange: null };
 let projectiles = [];
-
 let walls = [], stellars = [], spikes = [], movers = [], goal = {x:0, y:0};
 
 function createEmptyGrid(w, h) { return Array(h).fill().map(() => Array(w).fill(0)); }
@@ -136,11 +145,21 @@ const levels = [
     { w: 30, h: 20, build: function() { let g = createEmptyGrid(30, 20); for(let c=0;c<30;c++){ g[0][c]=1; g[19][c]=1; } for(let r=0;r<20;r++){ g[r][0]=1; g[r][29]=1; } g[17][10] = 7; g[16][15] = 6; g[18][2] = 2; g[18][27] = 3; return g; } }
 ];
 
-function resizeGameCanvas() {
-    gameCanvas.width = document.getElementById('game-canvas-container').clientWidth;
-    gameCanvas.height = document.getElementById('game-canvas-container').clientHeight;
+function resizeCanvases() {
+    let gCont = document.getElementById('game-container');
+    gameCanvas.width = gCont.clientWidth; gameCanvas.height = gCont.clientHeight;
+    
+    let eCont = document.getElementById('editor-container');
+    editorCanvas.width = eCont.clientWidth; editorCanvas.height = eCont.clientHeight;
 }
-window.addEventListener('resize', resizeGameCanvas);
+window.addEventListener('resize', resizeCanvases);
+
+// 모바일 터치 이벤트 안전 래퍼
+function getClientPos(e) {
+    if(e.touches && e.touches.length > 0) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    if(e.changedTouches && e.changedTouches.length > 0) return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+    return { x: e.clientX, y: e.clientY };
+}
 
 function goMenu() {
     gameState = 'MENU'; document.getElementById('menu-screen').style.display = 'flex'; document.getElementById('game-screen').style.display = 'none'; document.getElementById('editor-screen').style.display = 'none'; cancelAnimationFrame(reqAnimFrame);
@@ -167,16 +186,16 @@ function parseGridToMap(grid) {
 }
 
 function startGame(mode) {
-    playMode = mode;
+    playMode = mode; resizeCanvases();
     if (mode === 'custom') {
-        const saved = localStorage.getItem('customPortalMap_v4');
+        const saved = localStorage.getItem('customPortalMap_v5');
         if (!saved) { alert('저장된 맵이 없습니다!'); return; }
         parseGridToMap(JSON.parse(saved).grid);
     }
     gameState = 'PLAYING';
     document.getElementById('menu-screen').style.display = 'none';
     document.getElementById('game-screen').style.display = 'flex';
-    resizeGameCanvas();
+    
     if(mode === 'campaign') initLevel(0);
     else resetPlayerToLevel(false, true);
     
@@ -190,11 +209,9 @@ function initLevel(idx) {
     resetPlayerToLevel(false, true);
 }
 
-// 1초 후 재시작 데스 시스템
 function triggerDeath(instant = false) {
     if (isDead) return;
-    isDead = true;
-    player.vx = 0; player.vy = 0;
+    isDead = true; player.vx = 0; player.vy = 0;
     
     const flash = document.getElementById('flash');
     flash.style.opacity = 0.6; setTimeout(() => flash.style.opacity = 0, 150);
@@ -202,10 +219,9 @@ function triggerDeath(instant = false) {
 }
 
 function resetPlayerToLevel(showFlash = false, hardReset = false) {
-    isDead = false;
-    camDrag.offsetX = 0; camDrag.offsetY = 0;
+    isDead = false; camDrag.offsetX = 0; camDrag.offsetY = 0;
     if(playMode === 'campaign') parseGridToMap(levels[currentLevel].build());
-    else parseGridToMap(JSON.parse(localStorage.getItem('customPortalMap_v4')).grid);
+    else parseGridToMap(JSON.parse(localStorage.getItem('customPortalMap_v5')).grid);
     
     player.vx = 0; player.vy = 0; player.cooldown = 0;
     portals.blue = null; portals.orange = null; projectiles = [];
@@ -224,40 +240,31 @@ bindBtn('btn-left', 'left'); bindBtn('btn-right', 'right'); bindBtn('btn-jump', 
 document.getElementById('btn-blue').addEventListener('pointerdown', () => { currentGun = 'blue'; document.getElementById('btn-blue').classList.add('active'); document.getElementById('btn-orange').classList.remove('active'); });
 document.getElementById('btn-orange').addEventListener('pointerdown', () => { currentGun = 'orange'; document.getElementById('btn-orange').classList.add('active'); document.getElementById('btn-blue').classList.remove('active'); });
 
-// 인게임 카메라 스와이프 이동 및 포탈 사격
+// 게임 카메라 드래그 및 사격
 gameCanvas.addEventListener('pointerdown', (e) => {
-    if (isDead) return;
+    e.preventDefault(); if (isDead) return;
+    let pos = getClientPos(e);
     camDrag.active = true; camDrag.isDragging = false;
-    camDrag.startX = e.clientX || e.touches[0].clientX;
-    camDrag.startY = e.clientY || e.touches[0].clientY;
+    camDrag.startX = pos.x; camDrag.startY = pos.y;
 });
 
 window.addEventListener('pointermove', (e) => {
     if (camDrag.active && gameState === 'PLAYING') {
-        let x = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-        let y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
-        let dx = x - camDrag.startX; let dy = y - camDrag.startY;
-        
-        // 조금이라도 움직이면 화면 이동(Dragging)으로 간주
-        if (Math.hypot(dx, dy) > 10) camDrag.isDragging = true;
-        
-        if (camDrag.isDragging) {
-            camDrag.offsetX = -dx; camDrag.offsetY = -dy;
-        }
+        let pos = getClientPos(e);
+        let dx = pos.x - camDrag.startX; let dy = pos.y - camDrag.startY;
+        if (Math.hypot(dx, dy) > 8) camDrag.isDragging = true;
+        if (camDrag.isDragging) { camDrag.offsetX = -dx; camDrag.offsetY = -dy; }
     }
 });
 
 window.addEventListener('pointerup', (e) => {
-    if (camDrag.active) {
+    if (camDrag.active && gameState === 'PLAYING') {
         camDrag.active = false;
-        // 드래그하지 않고 터치만 뗐으면 포탈 발사
         if (!camDrag.isDragging && e.target === gameCanvas) {
+            let pos = getClientPos(e);
             const rect = gameCanvas.getBoundingClientRect();
-            let x = e.clientX || (e.changedTouches ? e.changedTouches[0].clientX : 0);
-            let y = e.clientY || (e.changedTouches ? e.changedTouches[0].clientY : 0);
-            
-            const tx = (x - rect.left) * (gameCanvas.width / rect.width) + camera.x;
-            const ty = (y - rect.top) * (gameCanvas.height / rect.height) + camera.y;
+            const tx = (pos.x - rect.left) * (gameCanvas.width / rect.width) + camera.x;
+            const ty = (pos.y - rect.top) * (gameCanvas.height / rect.height) + camera.y;
             const px = player.x + player.w/2, py = player.y + player.h/2;
             const angle = Math.atan2(ty - py, tx - px);
             projectiles.push({ x: px, y: py, w: 6, h: 6, vx: Math.cos(angle)*18, vy: Math.sin(angle)*18, color: currentGun });
@@ -270,7 +277,6 @@ function rectIntersect(r1, r2) { return !(r2.x >= r1.x + r1.w || r2.x + r2.w <= 
 function updateGame() {
     if (gameState !== 'PLAYING') return;
 
-    // 시점 부드럽게 복귀
     if (!camDrag.active) {
         camDrag.offsetX *= 0.85; camDrag.offsetY *= 0.85;
         if (Math.abs(camDrag.offsetX) < 1) camDrag.offsetX = 0;
@@ -285,16 +291,16 @@ function updateGame() {
     const pRect = {x: player.x, y: player.y, w: player.w, h: player.h};
     const allSolids = [...walls, ...stellars]; 
 
-    // 움직이는 블록 (탑승 및 압사)
     movers.forEach(m => {
         m.x += m.vx; m.y += m.vy;
         if (Math.abs(m.x - m.startX) > m.range || Math.abs(m.y - m.startY) > m.range) { m.vx *= -1; m.vy *= -1; }
     });
 
     if (!isDead) {
+        // [수정 1] 좌우 스피드 감속. 기존 0.6 가속을 0.45로 줄임.
         let friction = player.grounded ? 0.82 : 0.96; 
-        if (keys.left) player.vx -= (player.grounded ? 0.6 : 0.25);
-        if (keys.right) player.vx += (player.grounded ? 0.6 : 0.25);
+        if (keys.left) player.vx -= (player.grounded ? 0.45 : 0.2);
+        if (keys.right) player.vx += (player.grounded ? 0.45 : 0.2);
         player.vx *= friction; 
         if (keys.jump && player.grounded) { player.vy = player.jumpPower; player.grounded = false; }
         
@@ -306,13 +312,11 @@ function updateGame() {
         if (player.cooldown > 0) player.cooldown--;
         pRect.x = player.x; pRect.y = player.y;
 
-        // 스파이크 충돌
         spikes.forEach(s => {
             let sRect = {x: s.x+4, y: s.y+4, w: s.w-8, h: s.h-8};
             if(rectIntersect(pRect, sRect)) triggerDeath();
         });
 
-        // 텔레포트 판정
         let justTeleported = false;
         if (portals.blue && portals.orange && player.cooldown === 0) {
             if (tryTeleport(portals.blue, portals.orange)) justTeleported = true;
@@ -332,12 +336,23 @@ function updateGame() {
                 if (ent.ny === 1 && player.vy < 0) movingInto = true;  
 
                 if (movingInto) {
+                    // [수정 2] 진입 속도에 비례하여 튕겨나가는 관성 적용
                     let speed = Math.hypot(player.vx, player.vy);
-                    if (ent.ny === -1 && ext.ny === -1) speed *= 1.2; 
-                    if (speed < 5) speed = 5;
-
-                    player.vx = ext.nx * speed; player.vy = ext.ny * speed;
-                    if (ext.ny === -1) player.vy = -Math.abs(speed);
+                    
+                    if (ext.nx !== 0) { 
+                        // 옆으로 튀어나올 때 (벽 포탈)
+                        player.vx = ext.nx * Math.max(speed, 3.5); // 최소한의 튀어나오는 힘만 보장
+                        player.vy = -1; // 살짝 위로 뜨게 하여 벽에 바로 긁히지 않도록
+                    } else if (ext.ny === -1) { 
+                        // 천장으로 솟구칠 때 (바닥 포탈)
+                        player.vx *= 0.5; // 좌우 관성 살짝 유지
+                        player.vy = -Math.max(speed, 5); 
+                        if (ent.ny === -1 && speed > 5) player.vy *= 1.15; // 무한 낙하 시 증폭
+                    } else { 
+                        // 아래로 떨어질 때 (천장 포탈)
+                        player.vx *= 0.5;
+                        player.vy = Math.max(speed, 2);
+                    }
 
                     player.x = ext.x + ext.w/2 - player.w/2 + (ext.nx * (player.w/2 + 4));
                     player.y = ext.y + ext.h/2 - player.h/2 + (ext.ny * (player.h/2 + 4));
@@ -349,7 +364,6 @@ function updateGame() {
             return false;
         }
 
-        // 블록 탑승 및 충돌
         if (!justTeleported) {
             const allBlocks = [...allSolids, ...movers];
             allBlocks.forEach(w => {
@@ -363,7 +377,6 @@ function updateGame() {
                         if (player.y < w.y) { 
                             player.y = w.y - pRect.h; 
                             player.grounded = true; 
-                            // 움직이는 벽돌 탑승 관성
                             if (w.vx !== undefined && w.vx !== 0) player.x += w.vx; 
                         } else { 
                             player.y = w.y + w.h; 
@@ -374,14 +387,12 @@ function updateGame() {
                 }
             });
             
-            // 압사 판정 (밀려난 후 다른 벽과 겹치면 사망)
             let isCrushed = false;
             let shrinkRect = {x: player.x+2, y: player.y+2, w: player.w-4, h: player.h-4};
             allSolids.forEach(s => { if(rectIntersect(shrinkRect, s)) isCrushed = true; });
             if (isCrushed) triggerDeath();
         }
 
-        // 총알 이동
         for (let i = projectiles.length - 1; i >= 0; i--) {
             let proj = projectiles[i];
             let prevX = proj.x; let prevY = proj.y;
@@ -438,15 +449,19 @@ function drawGame() {
 
     gCtx.fillStyle = '#e67e22'; movers.forEach(w => { gCtx.fillRect(w.x, w.y, w.w, w.h); });
 
-    gCtx.fillStyle = '#1b1b3a';
+    // [수정 3] 스텔라 블록 아스트랄 파티클 효과
     stellars.forEach(s => { 
+        gCtx.fillStyle = '#0f0f2a';
         gCtx.fillRect(s.x, s.y, s.w, s.h);
-        gCtx.fillStyle = 'rgba(255,255,255,0.7)';
-        let t = Date.now() / 200;
-        if(Math.sin(t + s.x) > 0.5) gCtx.fillRect(s.x + 4, s.y + 4, 2, 2);
-        if(Math.cos(t + s.y) > 0.5) gCtx.fillRect(s.x + 12, s.y + 12, 2, 2);
-        if(Math.sin(t - s.x) > 0) gCtx.fillRect(s.x + 4, s.y + 14, 2, 2);
-        gCtx.fillStyle = '#1b1b3a'; 
+        
+        let t = Date.now() / 300;
+        for(let i=0; i<4; i++) {
+            let px = s.x + s.w/2 + Math.sin(t*2 + i*2 + s.x)*12;
+            let py = s.y + s.h/2 + Math.cos(t*1.5 + i*2 + s.y)*12;
+            let size = 1 + Math.sin(t*5 + i)*1.5;
+            gCtx.fillStyle = `hsl(${(t*100 + i*50)%360}, 100%, 75%)`;
+            gCtx.beginPath(); gCtx.arc(px, py, Math.max(0.5, size), 0, Math.PI*2); gCtx.fill();
+        }
     });
 
     gCtx.fillStyle = '#e74c3c';
@@ -469,12 +484,10 @@ function drawGame() {
     gCtx.fillStyle = isDead ? '#e74c3c' : 'white'; 
     gCtx.fillRect(player.x, player.y, player.w, player.h);
     
-    // 네비게이션 화살표
     if (!isDead && goal) {
         let dx = goal.x - (player.x + player.w/2);
         let dy = goal.y - (player.y + player.h/2);
         let angle = Math.atan2(dy, dx);
-        
         gCtx.save();
         gCtx.translate(player.x + player.w/2, player.y + player.h/2);
         gCtx.rotate(angle);
@@ -486,57 +499,74 @@ function drawGame() {
 }
 
 // ==========================================
-// 맵 에디터
+// 맵 에디터 (자체 카메라 및 확대/축소 적용)
 // ==========================================
 let edCols = 20, edRows = 20;
 let editorGrid = createEmptyGrid(edCols, edRows);
-let currentTool = 1; 
 
 function openEditor() {
     gameState = 'EDITOR'; document.getElementById('menu-screen').style.display = 'none'; document.getElementById('editor-screen').style.display = 'flex'; 
-    resizeGrid(true); 
+    resizeCanvases(); resizeGrid(true); 
+    // 카메라 중앙 초기화
+    edCam.x = (edCols * TILE) / 2; edCam.y = (edRows * TILE) / 2; edCam.zoom = 1;
+    drawEditor();
 }
-function setTool(t, btn) {
-    if (currentTool === t && t !== 8) { setTool(8, document.getElementById('tool-pan')); return; } // 한 번 더 누르면 선택해제(이동)
-    currentTool = t; document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); 
+
+function setTool(t, btn) { 
+    currentTool = t; 
+    document.querySelectorAll('#editor-tools .tool-btn').forEach(b => b.classList.remove('active')); 
+    btn.classList.add('active'); 
+}
+
+function zoomEditor(dir) {
+    edCam.zoom *= (dir > 0 ? 1.2 : 1/1.2);
+    edCam.zoom = Math.max(0.3, Math.min(edCam.zoom, 3)); // 줌 제한
+    drawEditor();
 }
 
 function resizeGrid(isInit = false) {
-    if(!isInit) { edCols = parseInt(document.getElementById('ed-w').value)||20; edRows = parseInt(document.getElementById('ed-h').value)||20; editorGrid = createEmptyGrid(edCols, edRows); }
-    editorCanvas.width = edCols * TILE; editorCanvas.height = edRows * TILE; drawEditor();
+    if(!isInit) { 
+        edCols = parseInt(document.getElementById('ed-w').value)||20; 
+        edRows = parseInt(document.getElementById('ed-h').value)||20; 
+        editorGrid = createEmptyGrid(edCols, edRows); 
+    }
+    drawEditor();
 }
 
-let isDrawing = false, isPanning = false;
-let panStartX = 0, panStartY = 0, scrollStartX = 0, scrollStartY = 0;
-const edScrollCont = document.getElementById('editor-scroll');
+let isEdDrawing = false, isEdPanning = false;
+let edDragStartX = 0, edDragStartY = 0;
 
 editorCanvas.addEventListener('pointerdown', (e) => { 
-    if (currentTool === 8) {
-        isPanning = true; panStartX = e.clientX || e.touches[0].clientX; panStartY = e.clientY || e.touches[0].clientY;
-        scrollStartX = edScrollCont.scrollLeft; scrollStartY = edScrollCont.scrollTop;
+    let pos = getClientPos(e);
+    if (currentTool === 8) { // Pan (화면 이동)
+        isEdPanning = true; edDragStartX = pos.x; edDragStartY = pos.y;
     } else {
-        isDrawing = true; paintGrid(e); 
+        isEdDrawing = true; paintGrid(pos); 
     }
 });
 
 window.addEventListener('pointermove', (e) => { 
-    if (isPanning && gameState === 'EDITOR') {
-        let ex = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-        let ey = e.clientY || (e.touches ? e.touches[0].clientY : 0);
-        edScrollCont.scrollLeft = scrollStartX - (ex - panStartX);
-        edScrollCont.scrollTop = scrollStartY - (ey - panStartY);
-    } else if (isDrawing && e.target === editorCanvas) {
-        paintGrid(e); 
+    if (isEdPanning && gameState === 'EDITOR') {
+        let pos = getClientPos(e);
+        let dx = pos.x - edDragStartX; let dy = pos.y - edDragStartY;
+        edCam.x -= dx / edCam.zoom; edCam.y -= dy / edCam.zoom;
+        edDragStartX = pos.x; edDragStartY = pos.y;
+        drawEditor();
+    } else if (isEdDrawing && e.target === editorCanvas) {
+        paintGrid(getClientPos(e)); 
     }
 });
 
-window.addEventListener('pointerup', () => { isDrawing = false; isPanning = false; });
+window.addEventListener('pointerup', () => { isEdDrawing = false; isEdPanning = false; });
 
-function paintGrid(e) {
+function paintGrid(pos) {
     const rect = editorCanvas.getBoundingClientRect();
-    let ex = e.clientX || (e.changedTouches ? e.changedTouches[0].clientX : 0);
-    let ey = e.clientY || (e.changedTouches ? e.changedTouches[0].clientY : 0);
-    const col = Math.floor((ex - rect.left) / TILE); const row = Math.floor((ey - rect.top) / TILE);
+    // 화면 좌표를 월드 좌표로 변환 (줌 및 카메라 위치 적용)
+    let sx = pos.x - rect.left; let sy = pos.y - rect.top;
+    let wx = (sx - editorCanvas.width/2) / edCam.zoom + edCam.x;
+    let wy = (sy - editorCanvas.height/2) / edCam.zoom + edCam.y;
+
+    const col = Math.floor(wx / TILE); const row = Math.floor(wy / TILE);
     if(col >= 0 && col < edCols && row >= 0 && row < edRows) {
         if (currentTool === 2) { for(let r=0;r<edRows;r++) for(let c=0;c<edCols;c++) if(editorGrid[r][c]===2) editorGrid[r][c]=0; }
         if (currentTool === 3) { for(let r=0;r<edRows;r++) for(let c=0;c<edCols;c++) if(editorGrid[r][c]===3) editorGrid[r][c]=0; }
@@ -546,10 +576,20 @@ function paintGrid(e) {
 
 function drawEditor() {
     eCtx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
+    eCtx.save();
+    // 카메라 트랜스폼 적용
+    eCtx.translate(editorCanvas.width/2, editorCanvas.height/2);
+    eCtx.scale(edCam.zoom, edCam.zoom);
+    eCtx.translate(-edCam.x, -edCam.y);
+
+    // 맵 배경 (경계선 명확히)
+    eCtx.fillStyle = '#0a0a0a'; eCtx.fillRect(0, 0, edCols*TILE, edRows*TILE);
+
     for(let r=0; r<edRows; r++) {
         for(let c=0; c<edCols; c++) {
             const v = editorGrid[r][c], x = c*TILE, y = r*TILE;
-            eCtx.strokeStyle = '#333'; eCtx.strokeRect(x, y, TILE, TILE);
+            eCtx.strokeStyle = '#222'; eCtx.strokeRect(x, y, TILE, TILE);
+            
             if (v === 1) { eCtx.fillStyle = '#444'; eCtx.fillRect(x, y, TILE, TILE); }
             else if (v === 4) { eCtx.fillStyle = '#1b1b3a'; eCtx.fillRect(x, y, TILE, TILE); eCtx.fillStyle='white'; eCtx.fillText('*', x+6, y+15); }
             else if (v === 5) { eCtx.fillStyle = '#e74c3c'; eCtx.beginPath(); eCtx.moveTo(x, y+TILE); eCtx.lineTo(x+TILE/2, y+TILE/2); eCtx.lineTo(x+TILE, y+TILE); eCtx.fill(); }
@@ -559,13 +599,14 @@ function drawEditor() {
             else if (v === 3) { eCtx.fillStyle = '#2ecc71'; eCtx.beginPath(); eCtx.arc(x+10, y+10, 8, 0, Math.PI*2); eCtx.fill(); }
         }
     }
+    eCtx.restore();
 }
 
 function saveCustomMap() {
     let hasStart=false, hasGoal=false;
     for(let r=0; r<edRows; r++) for(let c=0; c<edCols; c++) { if(editorGrid[r][c]===2) hasStart=true; if(editorGrid[r][c]===3) hasGoal=true; }
     if(!hasStart || !hasGoal) { alert("시작(S)과 목표(G)를 배치하세요!"); return; }
-    localStorage.setItem('customPortalMap_v4', JSON.stringify({ grid: editorGrid })); alert("저장 성공!");
+    localStorage.setItem('customPortalMap_v5', JSON.stringify({ grid: editorGrid })); alert("저장 성공!");
 }
 </script>
 </body>
