@@ -2,147 +2,134 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Boar Incremental v3</title>
+    <title>Boar Incremental Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/break_infinity.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #e0e0e0; text-align: center; padding: 20px; }
-        .container { background: #2d2d2d; padding: 30px; border-radius: 20px; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.5); min-width: 450px; }
-        .stage-title { font-size: 1.2rem; color: #aaa; margin-bottom: 5px; }
-        .value-display { font-size: 2.5rem; font-weight: bold; color: #ffab40; margin: 20px 0; min-height: 60px; }
-        .progress-container { width: 100%; background: #444; height: 20px; border-radius: 10px; margin: 20px 0; overflow: hidden; }
-        #progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #ff9100, #ffab40); transition: width 0.1s; }
-        .btn-start { background: #4caf50; color: white; border: none; padding: 15px 40px; font-size: 1.2rem; cursor: pointer; border-radius: 50px; font-weight: bold; transition: 0.3s; }
-        .btn-start:hover { background: #66bb6a; transform: scale(1.05); }
-        .btn-start:disabled { background: #555; cursor: not-allowed; transform: none; }
-        .info { font-size: 0.9rem; color: #888; margin-top: 15px; }
-        #formula-text { color: #81d4fa; font-family: 'Courier New', monospace; }
+        body { background: #121212; color: #fff; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
+        .box { background: #1e1e1e; padding: 30px; border-radius: 20px; width: 400px; text-align: center; border: 1px solid #444; }
+        #val-x { font-size: 2rem; color: #00e676; margin: 15px 0; word-break: break-all; }
+        .controls { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+        button { padding: 15px; cursor: pointer; border: none; border-radius: 8px; font-weight: bold; }
+        #start-btn { background: #2979ff; color: white; }
+        #start-btn.running { background: #d50000; }
+        select { padding: 10px; border-radius: 5px; background: #333; color: white; border: 1px solid #555; }
+        .debug { font-size: 0.8rem; color: #888; margin-top: 20px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="stage-title">STAGE <span id="stg-num">1</span></div>
-    <div class="value-display" id="val-x">0</div>
+<div class="box">
+    <h3>🐗 멧돼지 증분기 v4 꿀꿀 🐖</h3>
     
-    <div class="progress-container">
-        <div id="progress-bar"></div>
-    </div>
-    
-    <div style="margin-bottom: 20px;">
-        목표: <span id="goal-val">1200 Ticks</span>
+    <label>스테이지 선택:</label>
+    <select id="stage-select"></select>
+
+    <div id="val-x">0</div>
+    <div id="status-text">상태: 대기 중...</div>
+
+    <div class="controls">
+        <button id="start-btn">스테이지 시작 / 정지</button>
+        <button id="reset-btn" style="background:#555; color:white;">초기화</button>
     </div>
 
-    <button id="main-btn" class="btn-start">스테이지 시작 🐗</button>
-
-    <div class="info">
-        현재 공식: <span id="formula-text">x = log10(x + 2)</span>
+    <div class="debug">
+        틱 카운터: <span id="tick-count">0</span> | 수식: <span id="formula-display">-</span>
     </div>
 </div>
 
 <script>
     const { Decimal } = BreakInfinity;
-
-    let stg = 1;
+    
+    // 상태 변수
+    let currentStage = 1;
     let x = new Decimal(0);
     let ticks = 0;
     let isRunning = false;
-    let gameLoop = null;
+    let timer = null;
 
-    // 공식 리스트
-    const formulas = [
-        (v) => v.add(2).log10(),              // 1: x = log10(x + 2)
-        (v) => v.pow(0.1).add(1),             // 2: x = x^0.1 + 1
-        (v) => v.pow(0.25).add(1),            // 3: x = x^0.25 + 1
-        (v) => v.pow(0.5).add(1),             // 4: x = x^0.5 + 1
-        (v) => v.add(1).div(2),               // 5: x = (x + 1) / 2
-        (v) => v.add(1),                      // 6: x = x + 1
-        (v) => v.add(v.add(1).log10()),       // 7: x = x + log10(x + 1)
-        (v) => v.add(5),                      // 8: x = x + 5
-        (v) => v.add(10),                     // 9: x = x + 10
-        (v) => v.add(v.add(1e-100).pow(0.01)) // 10: x = x + x^0.01
+    // 17 스테이지 설정
+    const stageFormulas = [
+        (x) => x.add(2).log10(),              // 1
+        (x) => x.pow(0.1).add(1),             // 2
+        (x) => x.pow(0.25).add(1),            // 3
+        (x) => x.pow(0.5).add(1),             // 4
+        (x) => x.add(1).div(2),               // 5
+        (x) => x.add(1),                      // 6
+        (x) => x.add(x.add(1).log10()),       // 7
+        (x) => x.add(5),                      // 8
+        (x) => x.add(10),                     // 9
+        (x) => x.add(x.pow(0.01)),            // 10
+        (x) => x.add(x.pow(0.05)).add(1),     // 11
+        (x) => x.mul(1.05),                   // 12
+        (x) => x.add(x.add(10).log10()),      // 13
+        (x) => x.mul(x.add(1).sqrt()),        // 14
+        (x) => x.add(100),                    // 15
+        (x) => x.add(x.sqrt()),               // 16
+        (x) => x.pow(2)                       // 17
     ];
 
-    const formulaNames = [
-        "x = log10(x + 2)", "x = x^0.1 + 1", "x = x^0.25 + 1", "x = x^0.5 + 1",
-        "x = (x + 1) / 2", "x = x + 1", "x = x + log10(x + 1)", "x = x + 5",
-        "x = x + 10", "x = x + x^0.01"
-    ];
+    // UI 요소
+    const valDisplay = document.getElementById('val-x');
+    const startBtn = document.getElementById('start-btn');
+    const select = document.getElementById('stage-select');
+    const statusText = document.getElementById('status-text');
+    const tickDisplay = document.getElementById('tick-count');
+    const formulaDisplay = document.getElementById('formula-display');
 
-    const goals = [1200, 5, 20, 100, 0.999, 100, 500, 1000, 5000, 10000];
-
-    function updateUI() {
-        document.getElementById('stg-num').innerText = stg;
-        document.getElementById('formula-text').innerText = formulaNames[stg-1];
-        
-        let progress = 0;
-        if (stg === 1) {
-            document.getElementById('val-x').innerText = x.toFixed(10); // 시각적 변화를 위해 소수점 10자리 표시
-            document.getElementById('goal-val').innerText = goals[0] + " Ticks";
-            progress = (ticks / goals[0]) * 100;
-        } else {
-            document.getElementById('val-x').innerText = x.toString();
-            document.getElementById('goal-val').innerText = goals[stg-1];
-            progress = x.div(goals[stg-1]).mul(100).toNumber();
+    // 초기화 및 이벤트 등록
+    function init() {
+        for(let i=1; i<=17; i++) {
+            let opt = document.createElement('option');
+            opt.value = i; opt.innerText = "STAGE " + i;
+            select.appendChild(opt);
         }
-        
-        document.getElementById('progress-bar').style.width = Math.min(progress, 100) + "%";
+        select.value = currentStage;
+    }
+
+    function update() {
+        valDisplay.innerText = x.toString().slice(0, 15);
+        tickDisplay.innerText = ticks;
+        formulaDisplay.innerText = "Stage " + currentStage + " 공식 적용";
     }
 
     function tick() {
-        // 안전한 계산을 위해 0 방지 epsilon 적용
-        let nextX = formulas[stg-1](x);
-        
-        // 스테이지 1은 틱 수로 계산, 나머지는 x값으로 계산
-        if (stg === 1) {
-            ticks++;
-            x = nextX;
-            if (ticks >= goals[0]) finishStage();
-        } else {
-            x = nextX;
-            if (x.gte(goals[stg-1])) finishStage();
-        }
-        
-        updateUI();
+        ticks++;
+        x = stageFormulas[currentStage-1](x);
+        // 에러 방지 (NaN 방지)
+        if (x.isNaN()) x = new Decimal(0);
+        update();
     }
 
-    function finishStage() {
-        clearInterval(gameLoop);
-        isRunning = false;
-        alert(`스테이지 ${stg} 클리어! 꿀꿀 🐖`);
-        
-        if (stg < 10) {
-            stg++;
-            resetState();
+    startBtn.onclick = () => {
+        if (isRunning) {
+            clearInterval(timer);
+            isRunning = false;
+            startBtn.classList.remove('running');
+            statusText.innerText = "상태: 멈춤";
         } else {
-            alert("전설의 멧돼지 등극! 모든 스테이지 완료 꿀꿀 🐖");
-            stg = 1;
-            resetState();
+            timer = setInterval(tick, 50);
+            isRunning = true;
+            startBtn.classList.add('running');
+            statusText.innerText = "상태: 작동 중! 꿀꿀 🐖";
         }
-    }
+    };
 
-    function resetState() {
+    document.getElementById('reset-btn').onclick = () => {
         x = new Decimal(0);
         ticks = 0;
-        const btn = document.getElementById('main-btn');
-        btn.disabled = false;
-        btn.innerText = "스테이지 시작 🐗";
-        updateUI();
-    }
+        update();
+    };
 
-    document.getElementById('main-btn').addEventListener('click', () => {
-        if (isRunning) return;
-        isRunning = true;
-        document.getElementById('main-btn').disabled = true;
-        document.getElementById('main-btn').innerText = "증분 중...";
-        
-        // 30ms 마다 틱 실행 (부드러운 시각 효과)
-        gameLoop = setInterval(tick, 30);
-    });
+    select.onchange = () => {
+        currentStage = parseInt(select.value);
+        x = new Decimal(0);
+        ticks = 0;
+        update();
+    };
 
-    // 초기화
-    updateUI();
+    init();
+    update();
 </script>
-
 </body>
 </html>
 
