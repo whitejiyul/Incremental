@@ -2,31 +2,40 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Boar Incremental Game v2</title>
+    <title>Boar Incremental v3</title>
     <script src="https://cdn.jsdelivr.net/npm/break_infinity.js"></script>
     <style>
-        body { font-family: 'Courier New', monospace; background-color: #2c3e50; color: #ecf0f1; text-align: center; padding: 40px; }
-        .game-box { background: #34495e; padding: 30px; border-radius: 20px; display: inline-block; border: 4px border-style: solid; border-color: #7f8c8d; min-width: 400px; }
-        .status { font-size: 1.5rem; margin-bottom: 15px; }
-        #value-x { color: #f1c40f; font-size: 2rem; font-weight: bold; }
-        .btn-start { background-color: #27ae60; color: white; border: none; padding: 15px 30px; font-size: 1.2rem; cursor: pointer; border-radius: 10px; transition: 0.2s; }
-        .btn-start:hover { background-color: #2ecc71; }
-        .btn-start:disabled { background-color: #95a5a6; cursor: not-allowed; }
-        .formula-card { margin-top: 20px; padding: 10px; background: #2c3e50; border-radius: 10px; font-size: 0.9rem; color: #bdc3c7; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #e0e0e0; text-align: center; padding: 20px; }
+        .container { background: #2d2d2d; padding: 30px; border-radius: 20px; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.5); min-width: 450px; }
+        .stage-title { font-size: 1.2rem; color: #aaa; margin-bottom: 5px; }
+        .value-display { font-size: 2.5rem; font-weight: bold; color: #ffab40; margin: 20px 0; min-height: 60px; }
+        .progress-container { width: 100%; background: #444; height: 20px; border-radius: 10px; margin: 20px 0; overflow: hidden; }
+        #progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #ff9100, #ffab40); transition: width 0.1s; }
+        .btn-start { background: #4caf50; color: white; border: none; padding: 15px 40px; font-size: 1.2rem; cursor: pointer; border-radius: 50px; font-weight: bold; transition: 0.3s; }
+        .btn-start:hover { background: #66bb6a; transform: scale(1.05); }
+        .btn-start:disabled { background: #555; cursor: not-allowed; transform: none; }
+        .info { font-size: 0.9rem; color: #888; margin-top: 15px; }
+        #formula-text { color: #81d4fa; font-family: 'Courier New', monospace; }
     </style>
 </head>
 <body>
 
-<div class="game-box">
-    <h2>🐗 멧돼지 증분기 꿀꿀 🐖</h2>
-    <div class="status">스테이지: <span id="stg">1</span> / 10</div>
-    <div class="status">현재 값 (x): <br><span id="value-x">0</span></div>
-    <div class="status">목표: <span id="goal-text">1200 틱</span></div>
+<div class="container">
+    <div class="stage-title">STAGE <span id="stg-num">1</span></div>
+    <div class="value-display" id="val-x">0</div>
     
-    <button id="btn" class="btn-start">스테이지 시작</button>
+    <div class="progress-container">
+        <div id="progress-bar"></div>
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+        목표: <span id="goal-val">1200 Ticks</span>
+    </div>
 
-    <div class="formula-card">
-        현재 수식: <span id="formula">준비 중...</span>
+    <button id="main-btn" class="btn-start">스테이지 시작 🐗</button>
+
+    <div class="info">
+        현재 공식: <span id="formula-text">x = log10(x + 2)</span>
     </div>
 </div>
 
@@ -36,123 +45,101 @@
     let stg = 1;
     let x = new Decimal(0);
     let ticks = 0;
-    let running = false;
-    let loop = null;
+    let isRunning = false;
+    let gameLoop = null;
 
-    // 스테이지별 목표치 설정
-    const goals = [
-        1200,   // Stage 1 (Ticks)
-        5,      // Stage 2
-        50,     // Stage 3
-        100,    // Stage 4
-        0.99,   // Stage 5 (이 수식은 1로 수렴하므로 0.99가 적당해 꿀꿀)
-        100,    // Stage 6
-        200,    // Stage 7
-        500,    // Stage 8
-        1000,   // Stage 9
-        2000    // Stage 10
+    // 공식 리스트
+    const formulas = [
+        (v) => v.add(2).log10(),              // 1: x = log10(x + 2)
+        (v) => v.pow(0.1).add(1),             // 2: x = x^0.1 + 1
+        (v) => v.pow(0.25).add(1),            // 3: x = x^0.25 + 1
+        (v) => v.pow(0.5).add(1),             // 4: x = x^0.5 + 1
+        (v) => v.add(1).div(2),               // 5: x = (x + 1) / 2
+        (v) => v.add(1),                      // 6: x = x + 1
+        (v) => v.add(v.add(1).log10()),       // 7: x = x + log10(x + 1)
+        (v) => v.add(5),                      // 8: x = x + 5
+        (v) => v.add(10),                     // 9: x = x + 10
+        (v) => v.add(v.add(1e-100).pow(0.01)) // 10: x = x + x^0.01
     ];
 
-    const formulaStrs = [
-        "x = log10(x + 1 + 1e-100)",
-        "x = x^0.1 + 1",
-        "x = x^0.9 + 1",
-        "x = x + 1",
-        "x = (x + 1) / 2",
-        "x = x + 1",
-        "x = x + log10(x + 1)",
-        "x = x + 5",
-        "x = x + 10",
-        "x = x + x^0.01"
+    const formulaNames = [
+        "x = log10(x + 2)", "x = x^0.1 + 1", "x = x^0.25 + 1", "x = x^0.5 + 1",
+        "x = (x + 1) / 2", "x = x + 1", "x = x + log10(x + 1)", "x = x + 5",
+        "x = x + 10", "x = x + x^0.01"
     ];
 
-    const displayX = document.getElementById('value-x');
-    const displayStg = document.getElementById('stg');
-    const displayGoal = document.getElementById('goal-text');
-    const displayFormula = document.getElementById('formula');
-    const btn = document.getElementById('btn');
+    const goals = [1200, 5, 20, 100, 0.999, 100, 500, 1000, 5000, 10000];
 
     function updateUI() {
-        displayStg.innerText = stg;
-        displayFormula.innerText = formulaStrs[stg-1];
+        document.getElementById('stg-num').innerText = stg;
+        document.getElementById('formula-text').innerText = formulaNames[stg-1];
         
+        let progress = 0;
         if (stg === 1) {
-            displayX.innerText = ticks + " 틱";
-            displayGoal.innerText = goals[0] + " 틱";
+            document.getElementById('val-x').innerText = x.toFixed(10); // 시각적 변화를 위해 소수점 10자리 표시
+            document.getElementById('goal-val').innerText = goals[0] + " Ticks";
+            progress = (ticks / goals[0]) * 100;
         } else {
-            displayX.innerText = x.toString();
-            displayGoal.innerText = goals[stg-1];
+            document.getElementById('val-x').innerText = x.toString();
+            document.getElementById('goal-val').innerText = goals[stg-1];
+            progress = x.div(goals[stg-1]).mul(100).toNumber();
         }
+        
+        document.getElementById('progress-bar').style.width = Math.min(progress, 100) + "%";
     }
 
-    function process() {
-        // x가 0일 때 로그나 지수 함수에서 멈추지 않도록 아주 작은 안전값(epsilon) 사용
-        let safeX = x.add(1e-100);
-
-        switch(stg) {
-            case 1: 
-                ticks++;
-                x = safeX.add(1).log10(); // x = log10(x+1+1e-100)
-                break;
-            case 2: x = x.pow(0.1).add(1); break;
-            case 3: x = x.pow(0.9).add(1); break;
-            case 4: x = x.add(1); break;
-            case 5: x = x.add(1).div(2); break;
-            case 6: x = x.add(1); break;
-            case 7: x = x.add(x.add(1).log10()); break;
-            case 8: x = x.add(5); break;
-            case 9: x = x.add(10); break;
-            case 10: 
-                // x^0.01이 x=0일 때 0이 되어 멈추는 걸 방지하기 위해 최소 증가값 보정
-                let growth = x.pow(0.01);
-                if (growth.lt(0.1)) growth = new Decimal(0.1); 
-                x = x.add(growth); 
-                break;
+    function tick() {
+        // 안전한 계산을 위해 0 방지 epsilon 적용
+        let nextX = formulas[stg-1](x);
+        
+        // 스테이지 1은 틱 수로 계산, 나머지는 x값으로 계산
+        if (stg === 1) {
+            ticks++;
+            x = nextX;
+            if (ticks >= goals[0]) finishStage();
+        } else {
+            x = nextX;
+            if (x.gte(goals[stg-1])) finishStage();
         }
-
+        
         updateUI();
+    }
 
-        // 목표 체크
-        let cleared = false;
-        if (stg === 1) {
-            if (ticks >= goals[0]) cleared = true;
+    function finishStage() {
+        clearInterval(gameLoop);
+        isRunning = false;
+        alert(`스테이지 ${stg} 클리어! 꿀꿀 🐖`);
+        
+        if (stg < 10) {
+            stg++;
+            resetState();
         } else {
-            if (x.gte(goals[stg-1])) cleared = true;
-        }
-
-        if (cleared) {
-            clearInterval(loop);
-            running = false;
-            alert(`스테이지 ${stg} 클리어 꿀꿀! 🐖`);
-            
-            if (stg < 10) {
-                stg++;
-                resetStage();
-            } else {
-                alert("축하해! 모든 스테이지를 정복했어 꿀꿀! 🐖");
-                stg = 1;
-                resetStage();
-            }
+            alert("전설의 멧돼지 등극! 모든 스테이지 완료 꿀꿀 🐖");
+            stg = 1;
+            resetState();
         }
     }
 
-    function resetStage() {
+    function resetState() {
         x = new Decimal(0);
         ticks = 0;
+        const btn = document.getElementById('main-btn');
         btn.disabled = false;
-        btn.innerText = "스테이지 시작";
+        btn.innerText = "스테이지 시작 🐗";
         updateUI();
     }
 
-    btn.addEventListener('click', () => {
-        if (running) return;
-        running = true;
-        btn.disabled = true;
-        btn.innerText = "성장 중...";
-        loop = setInterval(process, 50); // 0.05초마다 실행
+    document.getElementById('main-btn').addEventListener('click', () => {
+        if (isRunning) return;
+        isRunning = true;
+        document.getElementById('main-btn').disabled = true;
+        document.getElementById('main-btn').innerText = "증분 중...";
+        
+        // 30ms 마다 틱 실행 (부드러운 시각 효과)
+        gameLoop = setInterval(tick, 30);
     });
 
-    // 초기 화면 세팅
+    // 초기화
     updateUI();
 </script>
 
