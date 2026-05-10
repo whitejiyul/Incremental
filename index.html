@@ -1,53 +1,145 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-    <title>X Incremental</title>
+    <meta charset="UTF-8">
+    <title>Boar Incremental Game</title>
+    <!-- BreakInfinity.js 라이브러리 로드 -->
+    <script src="https://cdn.jsdelivr.net/npm/break_infinity.js"></script>
     <style>
-        body { font-family: monospace; background: #111; color: #eee; text-align: center; padding-top: 50px; }
-        .resource { font-size: 2em; margin-bottom: 20px; }
-        button { padding: 10px 20px; font-size: 1em; cursor: pointer; background: #333; color: white; border: 1px solid #555; }
-        button:hover { background: #444; }
-        .upgrade-section { margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; }
+        body { font-family: 'Arial', sans-serif; background-color: #f0f0f0; text-align: center; padding: 50px; }
+        .container { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 0 10px rgba(0,0,0,0.1); display: inline-block; }
+        h1 { color: #5d4037; }
+        .stat { font-size: 24px; margin: 10px 0; }
+        #value-x { font-weight: bold; color: #e64a19; }
+        button { padding: 10px 20px; font-size: 18px; cursor: pointer; background-color: #8d6e63; color: white; border: none; border-radius: 5px; }
+        button:hover { background-color: #6d4c41; }
+        .formula-info { margin-top: 20px; font-style: italic; color: #757575; }
     </style>
 </head>
 <body>
-    <div class="resource">X: <span id="count">0</span></div>
-    <button onclick="clickX()">X 생성</button>
 
-    <div class="upgrade-section">
-        <h3>점진적 확장 (Upgrades)</h3>
-        <button id="upgBtn" onclick="buyUpgrade()">자동 생성기 구매 (비용: 10)</button>
-    </div>
+<div class="container">
+    <h1>🐗 멧돼지 증분 스테이지 꿀꿀 🐖</h1>
+    <div class="stat">스테이지: <span id="stage-num">1</span> / 10</div>
+    <div class="stat">현재 값 (x): <span id="value-x">0</span></div>
+    <div class="stat">진행도: <span id="progress">0</span> / <span id="goal">1200</span></div>
+    
+    <br>
+    <button id="start-btn">스테이지 시작</button>
+    
+    <div class="formula-info" id="formula-display">수식: x = log10(x + 1 + 1e-100)</div>
+</div>
 
-    <script>
-        let x = 0;
-        let autoRate = 0;
-        let upgradeCost = 10;
+<script>
+    const { Decimal } = BreakInfinity;
 
-        function clickX() {
-            x += 1;
-            updateDisplay();
+    let stage = 1;
+    let x = new Decimal(0);
+    let ticks = 0;
+    let isRunning = false;
+    let timer = null;
+
+    const stageGoals = [
+        1200,    // Stage 1 (Ticks)
+        50,      // Stage 2
+        1000,    // Stage 3
+        5000,    // Stage 4
+        100,     // Stage 5
+        10000,   // Stage 6
+        20000,   // Stage 7
+        50000,   // Stage 8
+        100000,  // Stage 9
+        1e308    // Stage 10 (Final)
+    ];
+
+    const formulaDisplay = [
+        "x = log10(x + 1 + 1e-100)",
+        "x = x^0.1 + 1",
+        "x = x^0.9 + 1",
+        "x = x + 1",
+        "x = (x + 1) / 2",
+        "x = x + 1",
+        "x = x + log10(x + 1)",
+        "x = x + x^0.5 + 1",
+        "x = x * 1.1",
+        "x = x^1.05"
+    ];
+
+    function updateDisplay() {
+        document.getElementById('stage-num').innerText = stage;
+        document.getElementById('value-x').innerText = x.toString();
+        document.getElementById('formula-display').innerText = "수식: " + formulaDisplay[stage-1];
+        
+        if (stage === 1) {
+            document.getElementById('progress').innerText = ticks;
+            document.getElementById('goal').innerText = stageGoals[0];
+        } else {
+            document.getElementById('progress').innerText = x.toFixed(2);
+            document.getElementById('goal').innerText = stageGoals[stage-1];
+        }
+    }
+
+    function applyFormula() {
+        ticks++;
+        switch(stage) {
+            case 1: x = x.add(1).add(1e-100).log10(); break;
+            case 2: x = x.pow(0.1).add(1); break;
+            case 3: x = x.pow(0.9).add(1); break;
+            case 4: x = x.add(1); break;
+            case 5: x = x.add(1).div(2); break;
+            case 6: x = x.add(1); break;
+            case 7: x = x.add(x.add(1).log10()); break;
+            case 8: x = x.add(x.sqrt()).add(1); break;
+            case 9: x = x.mul(1.1); break;
+            case 10: x = x.pow(1.05); break;
         }
 
-        function buyUpgrade() {
-            if (x >= upgradeCost) {
-                x -= upgradeCost;
-                autoRate += 1;
-                upgradeCost = Math.round(upgradeCost * 1.15); // 15% 복리 증가
-                updateDisplay();
-            }
+        updateDisplay();
+
+        // 목표 달성 체크
+        let goalReached = false;
+        if (stage === 1) {
+            if (ticks >= stageGoals[0]) goalReached = true;
+        } else {
+            if (x.gte(stageGoals[stage-1])) goalReached = true;
         }
 
-        function updateDisplay() {
-            document.getElementById('count').innerText = Math.floor(x);
-            document.getElementById('upgBtn').innerText = `자동 생성기 구매 (비용: ${upgradeCost})`;
+        if (goalReached) {
+            alert(`스테이지 ${stage} 완료! 다음으로 넘어갑니다 꿀꿀!`);
+            nextStage();
         }
+    }
 
-        // 1% 법칙을 넘어서는 루프: 0.1초마다 실행
-        setInterval(() => {
-            x += autoRate / 10;
-            updateDisplay();
-        }, 100);
-    </script>
+    function nextStage() {
+        clearInterval(timer);
+        isRunning = false;
+        stage++;
+        x = new Decimal(0);
+        ticks = 0;
+        
+        if (stage > 10) {
+            alert("모든 스테이지를 정복했다 꿀꿀! 🐖");
+            stage = 1;
+        }
+        
+        updateDisplay();
+        document.getElementById('start-btn').innerText = "스테이지 시작";
+    }
+
+    document.getElementById('start-btn').addEventListener('click', () => {
+        if (isRunning) return;
+        
+        isRunning = true;
+        document.getElementById('start-btn').innerText = "진행 중...";
+        
+        // Stage 9, 10 등 곱셈이나 지수가 필요한 경우 x를 1로 시작하게 보정
+        if (x.eq(0) && (stage === 9 || stage === 10)) x = new Decimal(1.1);
+        
+        timer = setInterval(applyFormula, 50); // 50ms마다 1틱
+    });
+
+    updateDisplay();
+</script>
+
 </body>
 </html>
