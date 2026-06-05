@@ -3,464 +3,277 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>텍스트 인크리멘탈 게임 v3</title>
-    <script src="https://cdn.jsdelivr.net/npm/break_infinity.js"></script>
+    <title>인크리멘탈 IDLE 게임</title>
     <style>
         body {
-            background-color: #000000;
-            color: #ffffff;
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'Malgun Gothic', sans-serif;
+            background-color: #1e1e24;
+            color: #f5f5f5;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+            padding: 20px;
             margin: 0;
-            user-select: none;
-            padding: 20px 0;
         }
-
-        .game-container {
-            text-align: center;
-            border: 1px solid #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
-            max-width: 520px;
-            width: 90%;
-        }
-
-        .title {
-            font-size: 1.2rem;
-            letter-spacing: 2px;
-            margin-bottom: 20px;
-            opacity: 0.7;
-        }
-
-        .resource-display {
-            margin-bottom: 25px;
-            border-bottom: 1px dashed #444;
-            padding-bottom: 15px;
-        }
-
-        .points {
-            font-size: 2.4rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-            word-wrap: break-word;
-        }
-
-        .pps {
-            font-size: 1rem;
-            color: #aaaaaa;
-        }
-
-        .section-title {
-            text-align: left;
-            font-size: 0.9rem;
-            color: #888;
-            margin: 15px 0 5px 0;
-            text-transform: uppercase;
-        }
-
-        .upgrade-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        button {
-            background-color: #000000;
-            color: #ffffff;
-            border: 1px solid #ffffff;
-            padding: 12px;
-            font-family: inherit;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border-radius: 4px;
-            text-align: left;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
+        .container {
+            max-width: 600px;
             width: 100%;
+            background: #2a2a35;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
         }
-
-        button:hover:not(:disabled) {
-            background-color: #ffffff;
-            color: #000000;
+        h1 { text-align: center; color: #4caf50; margin-top: 0; }
+        .stats {
+            background: #333344;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            line-height: 1.6;
         }
-
-        button:disabled {
-            border-color: #333333;
-            color: #555555;
-            cursor: not-allowed;
+        .highlight { color: #ffeb3b; font-weight: bold; }
+        .section-title {
+            border-bottom: 2px solid #444;
+            padding-bottom: 5px;
+            margin-top: 20px;
+            color: #81c784;
         }
-
-        .btn-header {
+        .btn {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            font-size: 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            width: 100%;
+            margin-bottom: 10px;
+            text-align: left;
             display: flex;
             justify-content: space-between;
-            width: 100%;
-            font-weight: bold;
+            align-items: center;
         }
-
-        .btn-sub {
-            font-size: 0.75rem;
-            opacity: 0.6;
+        .btn:hover { background-color: #45a049; }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled {
+            background-color: #555;
+            color: #888;
+            cursor: not-allowed;
+            transform: none;
         }
-
-        .btn-row {
-            display: flex;
-            gap: 8px;
-            width: 100%;
-        }
-        .max-btn { max-width: 70px; text-align: center; justify-content: center; align-items: center; font-weight: bold; }
+        .reset-btn { background-color: #e91e63; }
+        .reset-btn:hover { background-color: #d81b60; }
+        .info-text { font-size: 0.85rem; color: #bbb; }
     </style>
 </head>
 <body>
 
-<div class="game-container">
-    <div class="title">INCREMENTAL SYSTEM v3</div>
+<div class="container">
+    <h1>자동 인크리멘탈 게임</h1>
     
-    <div class="resource-display">
-        <div class="points" id="points-display">0</div>
-        <div class="pps">초당 생산량 (PPS): <span id="pps-display">1</span></div>
+    <div class="stats">
+        <div>보유 포인트: <span id="points" class="highlight">0.0</span> p</div>
+        <div>초당 생산량 (인컴): <span id="pps" class="highlight">1.0</span> p/s</div>
+        <div>리셋 횟수: <span id="reset-count">0</span>회 (포인트 획득 배수: <span id="reset-multiplier">x1</span>)</div>
     </div>
 
-    <div class="upgrade-container">
-        <div class="section-title">Upgrades</div>
-        
-        <div class="btn-row">
-            <button id="btn-upgrade1" onclick="buyUpgrade1()">
-                <div class="btn-header">
-                    <span>업그레이드 1</span>
-                    <span>보유: <span id="up1-amount">0</span></span>
-                </div>
-                <div class="btn-sub">가격: <span id="up1-cost">5</span> | 효과: 기본 PPS 증가</div>
-            </button>
-            <button id="btn-buy-max" class="max-btn" onclick="buyMaxUpgrade1()" style="display: none;">MAX</button>
+    <h3 class="section-title">리셋 (Prestige)</h3>
+    <button id="reset-button" class="btn reset-btn" onclick="prestige()">
+        <div>
+            <strong>다음 단계로 리셋</strong><br>
+            <span class="info-text">다음 업그레이드 해금 & 배수 +1</span>
         </div>
+        <span id="reset-cost">비용: 100 p</span>
+    </button>
 
-        <button id="btn-upgrade2" onclick="buyUpgrade2()" style="display: none;">
-            <div class="btn-header">
-                <span>업그레이드 2</span>
-                <span>보유: <span id="up2-amount">0</span></span>
-            </div>
-            <div class="btn-sub">가격: <span id="up2-cost">1,000,000</span> | 효과: 업글1 베이스 +0.2</div>
-        </button>
-
-        <button id="btn-upgrade3" onclick="buyUpgrade3()" style="display: none;">
-            <div class="btn-header">
-                <span>업그레이드 3</span>
-                <span>보유: <span id="up3-amount">0</span></span>
-            </div>
-            <div class="btn-sub">가격: <span id="up3-cost">1e10</span> | 효과: 업글2 베이스 +0.05, 리셋1 베이스 +0.2</div>
-        </button>
-
-        <div id="auto-section" style="display: none;">
-            <div class="section-title">Automation</div>
-            <button id="btn-auto-level" onclick="buyAutoLevel()">
-                <div class="btn-header">
-                    <span>자동구매기 (업글1 자동구매)</span>
-                    <span>Lv. <span id="auto-level">0</span></span>
-                </div>
-                <div class="btn-sub">가격: <span id="auto-cost">1,000</span> | 작동 속도: <span id="auto-interval">1.00</span>초에 한 번</div>
-            </button>
+    <h3 class="section-title">업그레이드 목록</h3>
+    <div id="upgrades-container">
         </div>
-
-        <div class="section-title">Reset Layer</div>
-        
-        <button id="btn-reset1" onclick="triggerReset1()">
-            <div class="btn-header">
-                <span>리셋 1</span>
-                <span>단계: <span id="reset1-amount">0</span></span>
-            </div>
-            <div class="btn-sub">가격: <span id="reset1-cost">100</span> 포인트 | 효과: 시스템 배수 강화</div>
-        </button>
-
-        <button id="btn-reset2" onclick="triggerReset2()">
-            <div class="btn-header">
-                <span>리셋 2</span>
-                <span>단계: <span id="reset2-amount">0</span></span>
-            </div>
-            <div class="btn-sub">가격: 1.79e308 포인트 | 효과: 무한 돌파 및 지수적 강화</div>
-        </button>
-    </div>
 </div>
 
 <script>
-    const D = (val) => new Decimal(val);
-
-    // --- 게임 상태 변수 ---
-    let points = D(0);
-    let upgrade1 = D(0);
-    let upgrade2 = D(0);
-    let upgrade3 = D(0);
-    
-    let reset1 = 0;
-    let reset2 = 0;
-    
-    let autoLevel = 0;
-    let autoTimer = 0; // 자동구매 내부 틱 트래킹
-
-    const MAX_BEFORE_BREAK = D("1.7976931348623157e308");
-
-    // --- 수식 및 시스템 계산 ---
-
-    // 1. 업그레이드 1 가격 계산 (소프트캡 반영)
-    function getUpgrade1Cost() {
-        let baseCost = D(5);
-        // 소프트캡: 업글1 보유량이 1e6(백만) 이상일 때 가격에 (up1amount * 1e-6)을 가산
-        if (upgrade1.gte(1e6)) {
-            let penalty = upgrade1.mul(1e-6);
-            return baseCost.add(penalty);
+    // 게임 상태 선언
+    let state = {
+        points: 0,
+        resetCount: 0,
+        upgrades: {
+            1: { amount: 0, cost: 5, basePps: 1 }
         }
-        return baseCost;
-    }
+    };
 
-    // 2. 업그레이드 2 가격 계산: 기본 1e6, 구매당 x3
-    function getUpgrade2Cost() {
-        return D(1e6).mul(D(3).pow(upgrade2));
-    }
-
-    // 3. 업그레이드 3 가격 계산: 기본 1e10, 구매당 x10
-    function getUpgrade3Cost() {
-        return D(1e10).mul(D(10).pow(upgrade3));
-    }
-
-    // 4. 자동구매기 레벨업 가격 계산: 기본 1000, 구매당 x10
-    function getAutoCost() {
-        return D(1000).mul(D(10).pow(autoLevel));
-    }
-
-    // 5. 자동구매기 주기 계산: 1 / (level + 1) 초
-    function getAutoInterval() {
-        return 1 / (autoLevel + 1);
-    }
-
-    // 6. 리셋 1 비용 계산: 100^(reset1 + 1)
-    function getReset1Cost() {
-        return D(100).pow(reset1 + 1);
-    }
-
-    // 7. 초당 생산량 (PPS) 핵심 수식 계산
-    function getPPS() {
-        // [업글1 베이스 효과]: 기본 1 + (업글2 효과) + (업글3 효과)
-        let up1BaseEffect = D(1).add(upgrade2.mul(0.2)).add(upgrade3.mul(0.05));
-        let totalUp1Effect = upgrade1.mul(up1BaseEffect);
-        let basePPS = D(1).add(totalUp1Effect);
-
-        // [리셋1 배수 효과]: (1 + 업글3보너스 + 리셋1단계를 베이스로 함) * 2^reset2
-        let r1Base = D(1).add(upgrade3.mul(0.2));
-        let r1Multiplier = D(1).add(r1Base.mul(reset1)).pow(D(2).pow(reset2)); 
-
-        // [리셋2 효과]: 전체 수식에 ^(1 + 0.2 * reset2) 거듭제곱 효과 부여
-        let finalPPS = basePPS.mul(r1Multiplier);
-        let r2Power = D(1).add(D(0.2).mul(reset2));
-        
-        return finalPPS.pow(r2Power);
-    }
-
-    // 8. 숫자 포맷터
-    function formatNumber(decimalObj) {
-        if (decimalObj.gte(1e6)) {
-            return decimalObj.toExponential(2).replace('+', '');
+    // 24번째 업그레이드까지 초기 데이터 구조 세팅 함수
+    function initUpgrades() {
+        for (let i = 2; i <= 24; i++) {
+            if (!state.upgrades[i]) {
+                state.upgrades[i] = {
+                    amount: 0,
+                    cost: 5 * Math.pow(10, i),
+                    basePps: 0 // 이후 업그레이드는 기본 p/s는 0이며, 다음 업글이 시너지를 줌
+                };
+            }
         }
-        return Math.floor(decimalObj.toNumber()).toLocaleString();
+    }
+    initUpgrades();
+
+    // 과학적 표기법 변환 함수 (숫자가 너무 커질 때 대비)
+    function format(num) {
+        if (num >= 1e9) {
+            return num.toExponential(2);
+        }
+        return num.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
     }
 
-    // --- UI 업데이트 ---
+    // 리셋 비용 계산 공식: 100^(amount + 1.01^amount)
+    function getResetCost() {
+        let amt = state.resetCount;
+        let exponent = amt + Math.pow(1.01, amt);
+        return Math.pow(100, exponent);
+    }
+
+    // 초당 총 생산량(PPS) 계산
+    function calculateTotalPps() {
+        // 뒤의 업그레이드가 앞의 업그레이드 베이스를 올려주는 보너스 계산
+        // 보너스 배열 초기화
+        let bonus = {};
+        for (let i = 1; i <= 24; i++) bonus[i] = 0;
+
+        // 역순으로 추적하여 이전 업그레이드에 보너스 부여 (+0.2 * amount)
+        for (let i = 24; i >= 2; i--) {
+            if (state.upgrades[i] && state.upgrades[i].amount > 0) {
+                bonus[i - 1] += 0.2 * state.upgrades[i].amount;
+            }
+        }
+
+        // 총 PPS 합산 (기본 초당 1포인트 제공 포함)
+        let totalBase = 1;
+        for (let i = 1; i <= 24; i++) {
+            let upg = state.upgrades[i];
+            let effectiveBase = upg.basePps + bonus[i];
+            totalBase += effectiveBase * upg.amount;
+        }
+
+        // 리셋 배수 적용 (리셋 0회면 x1, 1회면 x2 ...)
+        let multiplier = state.resetCount + 1;
+        return totalBase * multiplier;
+    }
+
+    // 업그레이드 구매 함수
+    function buyUpgrade(id) {
+        let upg = state.upgrades[id];
+        if (state.points >= upg.cost) {
+            state.points -= upg.cost;
+            upg.amount++;
+            
+            // 업그레이드 1은 가격 고정(5), 나머지는 가격 공식이 필요하다면 이곳에서 확장 가능하나 
+            // 조건 상 고정(5*10^n)으로 주어졌으므로 유지합니다.
+            
+            updateUI();
+        }
+    }
+
+    // 리셋(프레스티지) 실행 함수
+    function prestige() {
+        let cost = getResetCost();
+        if (state.points >= cost) {
+            state.points = 0;
+            state.resetCount++;
+            
+            // 업그레이드 갯수 및 가격 초기화 (구매량은 리셋)
+            for (let i = 1; i <= 24; i++) {
+                state.upgrades[i].amount = 0;
+            }
+            
+            updateUI();
+        }
+    }
+
+    // UI 갱신 렌더링 함수
     function updateUI() {
-        const currentPPS = getPPS();
-        const up1Cost = getUpgrade1Cost();
-        const up2Cost = getUpgrade2Cost();
-        const up3Cost = getUpgrade3Cost();
-        const r1Cost = getReset1Cost();
-        const autoCost = getAutoCost();
+        let currentPps = calculateTotalPps();
+        document.getElementById('points').innerText = format(state.points);
+        document.getElementById('pps').innerText = format(currentPps);
+        document.getElementById('reset-count').innerText = state.resetCount;
+        document.getElementById('reset-multiplier').innerText = "x" + (state.resetCount + 1);
 
-        // 상단 자원 자막
-        document.getElementById('points-display').innerText = formatNumber(points);
-        document.getElementById('pps-display').innerText = formatNumber(currentPPS);
+        // 리셋 버튼 업데이트
+        let resetCost = getResetCost();
+        document.getElementById('reset-cost').innerText = "비용: " + format(resetCost) + " p";
+        document.getElementById('reset-button').disabled = state.points < resetCost;
 
-        // 업그레이드 1 상태
-        document.getElementById('up1-amount').innerText = formatNumber(upgrade1);
-        document.getElementById('up1-cost').innerText = formatNumber(up1Cost);
-        document.getElementById('btn-upgrade1').disabled = points.lt(up1Cost);
+        // 업그레이드 리스트 컨테이너 동적 생성
+        let container = document.getElementById('upgrades-container');
+        container.innerHTML = '';
 
-        // [MAX 해금 조건]: 리셋1이 1회 이상이거나 리셋2가 1회 이상일 때 버튼 표시
-        const isMaxUnlocked = (reset1 > 0 || reset2 > 0);
-        document.getElementById('btn-buy-max').style.display = isMaxUnlocked ? "flex" : "none";
-        document.getElementById('btn-buy-max').disabled = points.lt(up1Cost);
+        // 해금될 업그레이드 개수: 기본 1개 + 리셋 횟수만큼 추가 (최대 24개)
+        let unlockedCount = Math.min(24, 1 + state.resetCount);
 
-        // [리셋1 3회 돌파 해금 트리] -> 업글2 및 자동구매기 해금
-        const isR1Tier3Unlocked = (reset1 >= 3 || reset2 > 0);
-        document.getElementById('btn-upgrade2').style.display = isR1Tier3Unlocked ? "flex" : "none";
-        document.getElementById('btn-upgrade2').disabled = points.lt(up2Cost);
-        document.getElementById('up2-amount').innerText = formatNumber(upgrade2);
-        document.getElementById('up2-cost').innerText = formatNumber(up2Cost);
-
-        document.getElementById('auto-section').style.display = isR1Tier3Unlocked ? "block" : "none";
-        document.getElementById('auto-level').innerText = autoLevel;
-        document.getElementById('auto-cost').innerText = formatNumber(autoCost);
-        document.getElementById('auto-interval').innerText = getAutoInterval().toFixed(3);
-        document.getElementById('btn-auto-level').disabled = points.lt(autoCost);
-
-        // [리셋1 5회 돌파 해금 트리] -> 업글3 해금
-        const isR1Tier5Unlocked = (reset1 >= 5 || reset2 > 0);
-        document.getElementById('btn-upgrade3').style.display = isR1Tier5Unlocked ? "flex" : "none";
-        document.getElementById('btn-upgrade3').disabled = points.lt(up3Cost);
-        document.getElementById('up3-amount').innerText = formatNumber(upgrade3);
-        document.getElementById('up3-cost').innerText = formatNumber(up3Cost);
-
-        // 리셋 버튼들 제어
-        document.getElementById('reset1-amount').innerText = reset1;
-        document.getElementById('reset1-cost').innerText = formatNumber(r1Cost);
-        document.getElementById('btn-reset1').disabled = points.lt(r1Cost);
-
-        document.getElementById('reset2-amount').innerText = reset2;
-        document.getElementById('btn-reset2').disabled = points.lt(MAX_BEFORE_BREAK);
-    }
-
-    // --- 상호작용 액션 함수 ---
-
-    // 업그레이드 1 개별 구매
-    function buyUpgrade1() {
-        let cost = getUpgrade1Cost();
-        if (points.gte(cost)) {
-            points = points.sub(cost);
-            upgrade1 = upgrade1.add(1);
-            updateUI();
+        // 실시간 보너스 수치 미리 계산 (UI 표시용)
+        let bonus = {};
+        for (let i = 1; i <= 24; i++) bonus[i] = 0;
+        for (let i = 24; i >= 2; i--) {
+            bonus[i - 1] += 0.2 * state.upgrades[i].amount;
         }
-    }
 
-    // 업그레이드 1 최대 구매 (소프트캡 수식을 우회/포함한 수학적 처리)
-    function buyMaxUpgrade1() {
-        let cost = getUpgrade1Cost();
-        if (points.lt(cost)) return;
+        for (let i = 1; i <= unlockedCount; i++) {
+            let upg = state.upgrades[i];
+            let btn = document.createElement('button');
+            btn.className = 'btn';
+            btn.disabled = state.points < upg.cost;
+            btn.onclick = () => buyUpgrade(i);
 
-        if (upgrade1.lt(1e6)) {
-            // 소프트캡 전: 가격이 5로 고정
-            let affordableNormal = points.div(5).floor();
-            let normalLimit = D(1e6).sub(upgrade1);
-            
-            if (affordableNormal.gt(normalLimit)) {
-                points = points.sub(normalLimit.mul(5));
-                upgrade1 = D(1e6);
+            // 툴팁 및 이펙트 설명 텍스트 작성
+            let effectText = "";
+            if (i === 1) {
+                effectText = `기본 +${upg.basePps} p/s`;
             } else {
-                points = points.sub(affordableNormal.mul(5));
-                upgrade1 = upgrade1.add(affordableNormal);
-                updateUI();
-                return;
+                effectText = `업글 ${i-1}의 베이스 증가 (+0.2×개수)`;
             }
-        }
 
-        // 소프트캡 적용 후의 안전한 단일 대형 처리 (루프 최적화)
-        // 수식: 가격 = 5 + upgrade1 * 1e-6. 연속 구매 시 일차함수 적분 형태를 띄므로 역산 연산 처리
-        let currentCost = getUpgrade1Cost();
-        if (points.gte(currentCost)) {
-            let affordable = points.div(currentCost).floor(); 
-            // 연산 유연성 및 대수 보정을 위해 잔여 포인트에 따라 안전 상한선 구매 유도
-            if(affordable.gt(10000)) affordable = D(10000); 
-            
-            for(let i=0; i<parseInt(affordable.toNumber()); i++) {
-                let c = getUpgrade1Cost();
-                if(points.gte(c)) {
-                    points = points.sub(c);
-                    upgrade1 = upgrade1.add(1);
-                } else { break; }
-            }
-        }
-        updateUI();
-    }
+            // 현재 적용중인 보너스가 있다면 표시
+            let bonusText = bonus[i] > 0 ? ` <span style="color:#00e676;">(+${bonus[i].toFixed(1)} 시너지)</span>` : "";
 
-    // 업그레이드 2 구매
-    function buyUpgrade2() {
-        let cost = getUpgrade2Cost();
-        if (points.gte(cost)) {
-            points = points.sub(cost);
-            upgrade2 = upgrade2.add(1);
-            updateUI();
+            btn.innerHTML = `
+                <div>
+                    <strong>업그레이드 ${i}</strong> [구매: ${upg.amount}개]<br>
+                    <span class="info-text">${effectText}${bonusText}</span>
+                </div>
+                <span>비용: ${format(upg.cost)} p</span>
+            `;
+            container.appendChild(btn);
         }
     }
 
-    // 업그레이드 3 구매
-    function buyUpgrade3() {
-        let cost = getUpgrade3Cost();
-        if (points.gte(cost)) {
-            points = points.sub(cost);
-            upgrade3 = upgrade3.add(1);
-            updateUI();
-        }
-    }
-
-    // 자동구매기 레벨업 구매
-    function buyAutoLevel() {
-        let cost = getAutoCost();
-        if (points.gte(cost)) {
-            points = points.sub(cost);
-            autoLevel++;
-            updateUI();
-        }
-    }
-
-    // 리셋 1 레이어 실행
-    function triggerReset1() {
-        const cost = getReset1Cost();
-        if (points.gte(cost)) {
-            reset1++;
-            // 초기화 항목들
-            points = D(0);
-            upgrade1 = D(0);
-            updateUI();
-        }
-    }
-
-    // 리셋 2 레이어 실행 (자동구매기 및 리셋1 초기화 조건 반영)
-    function triggerReset2() {
-        if (points.gte(MAX_BEFORE_BREAK)) {
-            reset2++;
-            // 리셋 2 패널티: 포인트, 모든 업그레이드 단계, 리셋 1 단계, 그리고 '자동구매기'까지 완벽 초기화
-            points = D(0);
-            upgrade1 = D(0);
-            upgrade2 = D(0);
-            upgrade3 = D(0);
-            reset1 = 0;
-            autoLevel = 0; 
-            autoTimer = 0;
-            updateUI();
-        }
-    }
-
-    // --- 메인 게임 루프 (0.05초 = 50ms 마다 갱신) ---
+    // 게임 루프 (초당 10번 실행하여 부드럽게 포인트 추가 -> 0.1초마다 pps/10 만큼 증가)
     setInterval(() => {
-        // 1. 자원 획득 연산 (50ms 단위이므로 PPS / 20)
-        let gain = getPPS().div(20);
-        points = points.add(gain);
-
-        // BreakInfinity 활성화 전(reset2 === 0)엔 강제 한계치 제어
-        if (reset2 === 0 && points.gt(MAX_BEFORE_BREAK)) {
-            points = MAX_BEFORE_BREAK;
-        }
-
-        // 2. 자동구매기 로직 연산
-        const isR1Tier3Unlocked = (reset1 >= 3 || reset2 > 0);
-        if (isR1Tier3Unlocked && autoLevel > 0) {
-            autoTimer += 0.05; // 50ms 누적
-            let interval = getAutoInterval();
-            if (autoTimer >= interval) {
-                // 한 주기에 살 수 있는 최대만큼 업그레이드1 시도
-                buyMaxUpgrade1();
-                autoTimer = 0; // 타이머 리셋
+        let pps = calculateTotalPps();
+        state.points += pps / 10;
+        
+        // 주기적으로 화면 갱신 (성능 최적화를 위해 데이터 갱신 루프 내부에서 동시 처리)
+        // 버튼 활성화/비활성화 상태를 실시간 반영하기 위함
+        let currentPps = calculateTotalPps();
+        document.getElementById('points').innerText = format(state.points);
+        document.getElementById('pps').innerText = format(currentPps);
+        
+        // 버튼들의 disabled 상태만 부분 주기적 업데이트 (매번 전체 재생성하면 버벅이므로 비용만 체크)
+        let resetCost = getResetCost();
+        document.getElementById('reset-button').disabled = state.points < resetCost;
+        
+        let buttons = document.getElementById('upgrades-container').getElementsByClassName('btn');
+        let unlockedCount = Math.min(24, 1 + state.resetCount);
+        if(buttons.length === unlockedCount) {
+            for(let i=1; i<=unlockedCount; i++) {
+                buttons[i-1].disabled = state.points < state.upgrades[i].cost;
             }
+        } else {
+            updateUI(); // 개수가 맞지 않으면 전체 다시 그리기
         }
+    }, 100);
 
-        updateUI();
-    }, 50);
-
-    // 초기 구동
+    // 첫 실행 시 초기 UI 렌더링
     updateUI();
 </script>
 
 </body>
 </html>
-
