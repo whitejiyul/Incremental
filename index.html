@@ -1,124 +1,212 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-    <title>AD Ultra-Clone</title>
-    <!-- 대용량 숫자 처리를 위해 라이브러리 로드 권장 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/break_infinity.js/2.0.4/break_infinity.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>텍스트 인크리멘탈 게임</title>
     <style>
-        body { background: #000; color: #ccc; font-family: 'Courier New', monospace; }
-        .container { padding: 20px; }
-        .stat-box { font-size: 1.2em; margin-bottom: 20px; color: #fff; }
-        .dim-row { display: flex; align-items: center; margin: 5px 0; border: 1px solid #333; padding: 5px; }
-        .dim-info { width: 300px; }
-        button { background: #111; color: #fff; border: 1px solid #444; padding: 5px 15px; cursor: pointer; }
-        button:hover { background: #222; }
-        button:disabled { color: #444; border-color: #222; }
-        .btn-reset { border-color: #00f; margin-right: 10px; }
-        .btn-sacrifice { border-color: #f00; }
+        /* 검은 바탕에 하얀 텍스트 테마 */
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            user-select: none;
+        }
+
+        .game-container {
+            text-align: center;
+            border: 1px solid #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+            max-width: 450px;
+            width: 90%;
+        }
+
+        .title {
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            opacity: 0.7;
+        }
+
+        .resource-display {
+            margin-bottom: 25px;
+        }
+
+        .points {
+            font-size: 2.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .pps {
+            font-size: 1rem;
+            color: #aaaaaa;
+        }
+
+        .upgrade-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        /* 버튼 디자인 */
+        button {
+            background-color: #000000;
+            color: #ffffff;
+            border: 1px solid #ffffff;
+            padding: 15px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-radius: 4px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        /* 마우스 오버 시 반전 효과 */
+        button:hover:not(:disabled) {
+            background-color: #ffffff;
+            color: #000000;
+        }
+
+        /* 비활성화 상태 (비용 부족 시) */
+        button:disabled {
+            border-color: #333333;
+            color: #555555;
+            cursor: not-allowed;
+        }
+
+        .btn-header {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-weight: bold;
+        }
+
+        .btn-sub {
+            font-size: 0.8rem;
+            opacity: 0.6;
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="stat-box">
-        You have <span id="antimatter" style="color: #ffcc00;">10.00</span> antimatter.<br>
-        <small>Tickspeed: <span id="tickspeed">1000</span>ms (-<span id="ts-mult">11.1</span>% per upgrade)</small>
+
+<div class="game-container">
+    <div class="title">INCREMENTAL SYSTEM</div>
+    
+    <div class="resource-display">
+        <div class="points" id="points-display">0</div>
+        <div class="pps">초당 생산량 (PPS): <span id="pps-display">1</span></div>
     </div>
 
-    <!-- 리셋 버튼들 -->
-    <div style="margin-bottom: 20px;">
-        <button id="dim-boost" class="btn-reset" onclick="dimensionBoost()">Dimension Boost (0): Requires 20 D4</button>
-        <button id="galaxy" class="btn-reset" onclick="galaxyReset()">Galaxy (0): Requires 80 D8</button>
-        <button id="sacrifice" class="btn-sacrifice" onclick="sacrifice()">Sacrifice (x1.00)</button>
-    </div>
+    <div class="upgrade-container">
+        <button id="btn-upgrade1" onclick="buyUpgrade1()">
+            <div class="btn-header">
+                <span>업그레이드 1</span>
+                <span>보유: <span id="up1-amount">0</span></span>
+            </div>
+            <div class="btn-sub">가격: 5 포인트 (고정) | 효과: 초당 생산량 +1</div>
+        </button>
 
-    <div id="dimensions-container">
-        <!-- JS에서 차원 8개를 생성 -->
+        <button id="btn-reset1" onclick="triggerReset1()">
+            <div class="btn-header">
+                <span>리셋 1</span>
+                <span>단계: <span id="reset1-amount">0</span></span>
+            </div>
+            <div class="btn-sub">가격: <span id="reset1-cost">100</span> 포인트 | 효과: 생산 배수 +x1 (진행도 리셋)</div>
+        </button>
     </div>
 </div>
 
 <script>
-    // Decimal 라이브러리 간편 호출 (Decimal = Decimal.default)
-    const D = Decimal;
+    // --- 게임 데이터 초기화 ---
+    let points = 0;
+    let upgrade1 = 0;
+    let reset1 = 0;
+
+    const MAX_UPGRADE1 = 1.8e308; // JavaScript 실수 최대치 제한
+
+    // --- 수식 및 계산 함수 ---
     
-    let player = {
-        antimatter: new D(10),
-        dims: Array.from({length: 8}, (_, i) => ({
-            cost: new D(10).times(new D(10).pow(i * (i + 1))), // AD 고유 가격 스케일링
-            amount: new D(0),
-            bought: 0,
-            multi: new D(1),
-            baseCost: new D(10).times(new D(10).pow(i * (i + 1))),
-            costMult: new D(10).pow(i + 1)
-        })),
-        boosts: 0,
-        galaxies: 0,
-        sacMulti: new D(1),
-        tickspeed: 1000,
-        tsCost: new D(1000)
-    };
+    // 초당 생산량 (PPS) 계산: (기본1 + 업그레이드1 개수) * (기본1 + 리셋배수)
+    function getPPS() {
+        return (1 + upgrade1) * (1 + reset1);
+    }
 
-    function update() {
-        // 생산 로직: 상위 차원이 하위 차원을 생산 (8->7, 7->6... 1->Antimatter)
-        for (let i = 7; i > 0; i--) {
-            player.dims[i-1].amount = player.dims[i-1].amount.plus(
-                player.dims[i].amount.times(player.dims[i].multi).times(0.1)
-            );
+    // 리셋 1 비용 계산: 100^(amount + 1)
+    function getReset1Cost() {
+        return Math.pow(100, reset1 + 1);
+    }
+
+    // 숫자가 커질 때를 대비한 가독성 포맷터 (100만 이상은 과학적 표기법 e 사용)
+    function formatNumber(num) {
+        if (num >= 1e6) {
+            return num.toExponential(2).replace('+', '');
         }
-        player.antimatter = player.antimatter.plus(
-            player.dims[0].amount.times(player.dims[0].multi).times(0.1)
-        );
-
-        render();
+        return Math.floor(num).toLocaleString();
     }
 
-    function buyDim(i) {
-        let d = player.dims[i];
-        if (player.antimatter.gte(d.cost)) {
-            player.antimatter = player.antimatter.minus(d.cost);
-            d.amount = d.amount.plus(1);
-            d.bought++;
-            
-            // 10개 구매 시마다 배율 2배 및 가격 상승
-            if (d.bought % 10 === 0) {
-                d.multi = d.multi.times(2);
-                d.cost = d.cost.times(d.costMult);
-            }
+    // --- UI 업데이트 ---
+    function updateUI() {
+        const currentPPS = getPPS();
+        const reset1Cost = getReset1Cost();
+
+        document.getElementById('points-display').innerText = formatNumber(points);
+        document.getElementById('pps-display').innerText = formatNumber(currentPPS);
+        document.getElementById('up1-amount').innerText = formatNumber(upgrade1);
+        document.getElementById('reset1-amount').innerText = formatNumber(reset1);
+        document.getElementById('reset1-cost').innerText = formatNumber(reset1Cost);
+
+        // 구매 가능 여부에 따른 버튼 활성화/비활성화
+        document.getElementById('btn-upgrade1').disabled = (points < 5 || upgrade1 >= MAX_UPGRADE1);
+        document.getElementById('btn-reset1').disabled = (points < reset1Cost);
+    }
+
+    // --- 게임 액션 기능 ---
+
+    // 업그레이드 1 구매
+    function buyUpgrade1() {
+        if (points >= 5 && upgrade1 < MAX_UPGRADE1) {
+            points -= 5;
+            upgrade1++;
+            updateUI();
         }
     }
 
-    function sacrifice() {
-        // 8차원 배율을 (1차원 개수 / 10)에 비례해서 증가 (실제 AD 공식 변형)
-        let bonus = player.dims[0].amount.div(10).max(1).pow(0.2);
-        player.sacMulti = player.sacMulti.times(bonus);
-        // 1~7차원 초기화
-        for(let i=0; i<7; i++) player.dims[i].amount = new D(0);
+    // 리셋 1 실행
+    function triggerReset1() {
+        const cost = getReset1Cost();
+        if (points >= cost) {
+            reset1++;
+            // 리셋 효과: 포인트와 업그레이드 1을 초기화하고 배수를 얻음
+            points = 0;
+            upgrade1 = 0;
+            updateUI();
+        }
     }
 
-    function dimensionBoost() {
-        player.boosts++;
-        resetCommon();
-        // 부스트 보너스: 1차원 배율 x2 (중첩)
-        player.dims[0].multi = player.dims[0].multi.times(2);
-    }
+    // --- 게임 루프 (실시간 포인트 증가) ---
+    // 0.1초(100ms)마다 생산량의 10%씩 안전하게 추가하여 부드럽게 올라가도록 설정
+    setInterval(() => {
+        points += getPPS() / 10;
+        updateUI();
+    }, 100);
 
-    function galaxyReset() {
-        player.galaxies++;
-        resetCommon();
-        // 은하 보너스: 틱스피드 배율 강화 (기본 11% -> 13% ...)
-    }
-
-    function resetCommon() {
-        player.antimatter = new D(10);
-        player.dims.forEach(d => { d.amount = new D(0); d.bought = 0; d.cost = d.baseCost; d.multi = new D(1); });
-    }
-
-    function render() {
-        document.getElementById('antimatter').innerText = player.antimatter.toExponential(2);
-        // ... 생략된 UI 업데이트 로직 (각 차원 버튼 및 텍스트 갱신)
-    }
-
-    setInterval(update, 100);
+    // 최초 1회 실행하여 초기 화면 셋팅
+    updateUI();
 </script>
+
 </body>
 </html>
-
