@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>텍스트 인크리멘탈 게임 v2</title>
+    <title>텍스트 인크리멘탈 게임 v3</title>
     <script src="https://cdn.jsdelivr.net/npm/break_infinity.js"></script>
     <style>
-        /* 검은 바탕에 하얀 텍스트 테마 */
         body {
             background-color: #000000;
             color: #ffffff;
@@ -15,34 +14,37 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
             user-select: none;
+            padding: 20px 0;
         }
 
         .game-container {
             text-align: center;
             border: 1px solid #ffffff;
-            padding: 40px;
+            padding: 30px;
             border-radius: 8px;
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
-            max-width: 480px;
+            max-width: 520px;
             width: 90%;
         }
 
         .title {
             font-size: 1.2rem;
             letter-spacing: 2px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             opacity: 0.7;
         }
 
         .resource-display {
             margin-bottom: 25px;
+            border-bottom: 1px dashed #444;
+            padding-bottom: 15px;
         }
 
         .points {
-            font-size: 2.6rem;
+            font-size: 2.4rem;
             font-weight: bold;
             margin-bottom: 5px;
             word-wrap: break-word;
@@ -53,21 +55,27 @@
             color: #aaaaaa;
         }
 
+        .section-title {
+            text-align: left;
+            font-size: 0.9rem;
+            color: #888;
+            margin: 15px 0 5px 0;
+            text-transform: uppercase;
+        }
+
         .upgrade-container {
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            margin-top: 30px;
+            gap: 12px;
         }
 
-        /* 버튼 디자인 */
         button {
             background-color: #000000;
             color: #ffffff;
             border: 1px solid #ffffff;
-            padding: 15px;
+            padding: 12px;
             font-family: inherit;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             cursor: pointer;
             transition: all 0.2s ease;
             border-radius: 4px;
@@ -75,6 +83,7 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
+            width: 100%;
         }
 
         button:hover:not(:disabled) {
@@ -96,22 +105,22 @@
         }
 
         .btn-sub {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             opacity: 0.6;
         }
 
         .btn-row {
             display: flex;
-            gap: 10px;
+            gap: 8px;
+            width: 100%;
         }
-        .btn-row button { flex: 1; }
-        .max-btn { max-width: 90px; text-align: center; justify-content: center; align-items: center; }
+        .max-btn { max-width: 70px; text-align: center; justify-content: center; align-items: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="game-container">
-    <div class="title">INCREMENTAL SYSTEM v2</div>
+    <div class="title">INCREMENTAL SYSTEM v3</div>
     
     <div class="resource-display">
         <div class="points" id="points-display">0</div>
@@ -119,25 +128,54 @@
     </div>
 
     <div class="upgrade-container">
+        <div class="section-title">Upgrades</div>
+        
         <div class="btn-row">
-            <button id="btn-upgrade1" onclick="buyUpgrade1()" style="flex: 1;">
+            <button id="btn-upgrade1" onclick="buyUpgrade1()">
                 <div class="btn-header">
                     <span>업그레이드 1</span>
                     <span>보유: <span id="up1-amount">0</span></span>
                 </div>
-                <div class="btn-sub">가격: 5 포인트 (고정) | 효과: 초당 생산량 +1</div>
+                <div class="btn-sub">가격: <span id="up1-cost">5</span> | 효과: 기본 PPS 증가</div>
             </button>
-            <button id="btn-buy-max" class="max-btn" onclick="buyMaxUpgrade1()" style="display: none;">
-                <strong>MAX</strong>
+            <button id="btn-buy-max" class="max-btn" onclick="buyMaxUpgrade1()" style="display: none;">MAX</button>
+        </div>
+
+        <button id="btn-upgrade2" onclick="buyUpgrade2()" style="display: none;">
+            <div class="btn-header">
+                <span>업그레이드 2</span>
+                <span>보유: <span id="up2-amount">0</span></span>
+            </div>
+            <div class="btn-sub">가격: <span id="up2-cost">1,000,000</span> | 효과: 업글1 베이스 +0.2</div>
+        </button>
+
+        <button id="btn-upgrade3" onclick="buyUpgrade3()" style="display: none;">
+            <div class="btn-header">
+                <span>업그레이드 3</span>
+                <span>보유: <span id="up3-amount">0</span></span>
+            </div>
+            <div class="btn-sub">가격: <span id="up3-cost">1e10</span> | 효과: 업글2 베이스 +0.05, 리셋1 베이스 +0.2</div>
+        </button>
+
+        <div id="auto-section" style="display: none;">
+            <div class="section-title">Automation</div>
+            <button id="btn-auto-level" onclick="buyAutoLevel()">
+                <div class="btn-header">
+                    <span>자동구매기 (업글1 자동구매)</span>
+                    <span>Lv. <span id="auto-level">0</span></span>
+                </div>
+                <div class="btn-sub">가격: <span id="auto-cost">1,000</span> | 작동 속도: <span id="auto-interval">1.00</span>초에 한 번</div>
             </button>
         </div>
 
+        <div class="section-title">Reset Layer</div>
+        
         <button id="btn-reset1" onclick="triggerReset1()">
             <div class="btn-header">
                 <span>리셋 1</span>
                 <span>단계: <span id="reset1-amount">0</span></span>
             </div>
-            <div class="btn-sub">가격: <span id="reset1-cost">100</span> 포인트 | 효과: 생산 배수 +x1 (진행도 리셋)</div>
+            <div class="btn-sub">가격: <span id="reset1-cost">100</span> 포인트 | 효과: 시스템 배수 강화</div>
         </button>
 
         <button id="btn-reset2" onclick="triggerReset2()">
@@ -145,52 +183,85 @@
                 <span>리셋 2</span>
                 <span>단계: <span id="reset2-amount">0</span></span>
             </div>
-            <div class="btn-sub">가격: <span id="reset2-cost">1.79e308</span> 포인트 | 효과: 생산량 * 2^amount, 무한 돌파</div>
+            <div class="btn-sub">가격: 1.79e308 포인트 | 효과: 무한 돌파 및 지수적 강화</div>
         </button>
     </div>
 </div>
 
 <script>
-    // --- BreakInfinity 단축 선언 ---
     const D = (val) => new Decimal(val);
 
-    // --- 게임 데이터 초기화 (Decimal 객체 사용) ---
+    // --- 게임 상태 변수 ---
     let points = D(0);
     let upgrade1 = D(0);
-    let reset1 = 0; // 정수형태 유지
-    let reset2 = 0; // 정수형태 유지
+    let upgrade2 = D(0);
+    let upgrade3 = D(0);
+    
+    let reset1 = 0;
+    let reset2 = 0;
+    
+    let autoLevel = 0;
+    let autoTimer = 0; // 자동구매 내부 틱 트래킹
 
-    // 기본 한계치 및 리셋2 고정가격 (1.7976e308)
     const MAX_BEFORE_BREAK = D("1.7976931348623157e308");
 
-    // --- 수식 및 계산 함수 ---
-    
-    // 초당 생산량 (PPS) 계산: (1 + 업그레이드1) * (1 + 리셋1) * (2^리셋2)
-    function getPPS() {
-        let basePPS = upgrade1.add(1);
-        let r1Multiplier = D(1 + reset1);
-        let r2Multiplier = D(2).pow(reset2);
-        
-        return basePPS.mul(r1Multiplier).mul(r2Multiplier);
+    // --- 수식 및 시스템 계산 ---
+
+    // 1. 업그레이드 1 가격 계산 (소프트캡 반영)
+    function getUpgrade1Cost() {
+        let baseCost = D(5);
+        // 소프트캡: 업글1 보유량이 1e6(백만) 이상일 때 가격에 (up1amount * 1e-6)을 가산
+        if (upgrade1.gte(1e6)) {
+            let penalty = upgrade1.mul(1e-6);
+            return baseCost.add(penalty);
+        }
+        return baseCost;
     }
 
-    // 리셋 1 비용 계산: 100^(reset1 + 1)
+    // 2. 업그레이드 2 가격 계산: 기본 1e6, 구매당 x3
+    function getUpgrade2Cost() {
+        return D(1e6).mul(D(3).pow(upgrade2));
+    }
+
+    // 3. 업그레이드 3 가격 계산: 기본 1e10, 구매당 x10
+    function getUpgrade3Cost() {
+        return D(1e10).mul(D(10).pow(upgrade3));
+    }
+
+    // 4. 자동구매기 레벨업 가격 계산: 기본 1000, 구매당 x10
+    function getAutoCost() {
+        return D(1000).mul(D(10).pow(autoLevel));
+    }
+
+    // 5. 자동구매기 주기 계산: 1 / (level + 1) 초
+    function getAutoInterval() {
+        return 1 / (autoLevel + 1);
+    }
+
+    // 6. 리셋 1 비용 계산: 100^(reset1 + 1)
     function getReset1Cost() {
         return D(100).pow(reset1 + 1);
     }
 
-    // 리셋 2 비용 계산: 고정 infinite (1.79e308)
-    function getReset2Cost() {
-        return MAX_BEFORE_BREAK;
+    // 7. 초당 생산량 (PPS) 핵심 수식 계산
+    function getPPS() {
+        // [업글1 베이스 효과]: 기본 1 + (업글2 효과) + (업글3 효과)
+        let up1BaseEffect = D(1).add(upgrade2.mul(0.2)).add(upgrade3.mul(0.05));
+        let totalUp1Effect = upgrade1.mul(up1BaseEffect);
+        let basePPS = D(1).add(totalUp1Effect);
+
+        // [리셋1 배수 효과]: (1 + 업글3보너스 + 리셋1단계를 베이스로 함) * 2^reset2
+        let r1Base = D(1).add(upgrade3.mul(0.2));
+        let r1Multiplier = D(1).add(r1Base.mul(reset1)).pow(D(2).pow(reset2)); 
+
+        // [리셋2 효과]: 전체 수식에 ^(1 + 0.2 * reset2) 거듭제곱 효과 부여
+        let finalPPS = basePPS.mul(r1Multiplier);
+        let r2Power = D(1).add(D(0.2).mul(reset2));
+        
+        return finalPPS.pow(r2Power);
     }
 
-    // 최대 허용 가능한 업그레이드 1 수치 구하기
-    function getMaxUpgrade1Limit() {
-        // 리셋2를 한 번도 안 했다면 1.8e308 제한, 리셋2를 했다면 사실상 무한대 허용
-        return (reset2 > 0) ? D("1e1000") : D("1.8e308");
-    }
-
-    // 표기법 포맷터 (BreakInfinity 기본 기능 활용)
+    // 8. 숫자 포맷터
     function formatNumber(decimalObj) {
         if (decimalObj.gte(1e6)) {
             return decimalObj.toExponential(2).replace('+', '');
@@ -201,107 +272,192 @@
     // --- UI 업데이트 ---
     function updateUI() {
         const currentPPS = getPPS();
+        const up1Cost = getUpgrade1Cost();
+        const up2Cost = getUpgrade2Cost();
+        const up3Cost = getUpgrade3Cost();
         const r1Cost = getReset1Cost();
-        const r2Cost = getReset2Cost();
-        const maxUp1 = getMaxUpgrade1Limit();
+        const autoCost = getAutoCost();
 
+        // 상단 자원 자막
         document.getElementById('points-display').innerText = formatNumber(points);
         document.getElementById('pps-display').innerText = formatNumber(currentPPS);
+
+        // 업그레이드 1 상태
         document.getElementById('up1-amount').innerText = formatNumber(upgrade1);
-        document.getElementById('reset1-amount').innerText = reset1.toLocaleString();
+        document.getElementById('up1-cost').innerText = formatNumber(up1Cost);
+        document.getElementById('btn-upgrade1').disabled = points.lt(up1Cost);
+
+        // [MAX 해금 조건]: 리셋1이 1회 이상이거나 리셋2가 1회 이상일 때 버튼 표시
+        const isMaxUnlocked = (reset1 > 0 || reset2 > 0);
+        document.getElementById('btn-buy-max').style.display = isMaxUnlocked ? "flex" : "none";
+        document.getElementById('btn-buy-max').disabled = points.lt(up1Cost);
+
+        // [리셋1 3회 돌파 해금 트리] -> 업글2 및 자동구매기 해금
+        const isR1Tier3Unlocked = (reset1 >= 3 || reset2 > 0);
+        document.getElementById('btn-upgrade2').style.display = isR1Tier3Unlocked ? "flex" : "none";
+        document.getElementById('btn-upgrade2').disabled = points.lt(up2Cost);
+        document.getElementById('up2-amount').innerText = formatNumber(upgrade2);
+        document.getElementById('up2-cost').innerText = formatNumber(up2Cost);
+
+        document.getElementById('auto-section').style.display = isR1Tier3Unlocked ? "block" : "none";
+        document.getElementById('auto-level').innerText = autoLevel;
+        document.getElementById('auto-cost').innerText = formatNumber(autoCost);
+        document.getElementById('auto-interval').innerText = getAutoInterval().toFixed(3);
+        document.getElementById('btn-auto-level').disabled = points.lt(autoCost);
+
+        // [리셋1 5회 돌파 해금 트리] -> 업글3 해금
+        const isR1Tier5Unlocked = (reset1 >= 5 || reset2 > 0);
+        document.getElementById('btn-upgrade3').style.display = isR1Tier5Unlocked ? "flex" : "none";
+        document.getElementById('btn-upgrade3').disabled = points.lt(up3Cost);
+        document.getElementById('up3-amount').innerText = formatNumber(upgrade3);
+        document.getElementById('up3-cost').innerText = formatNumber(up3Cost);
+
+        // 리셋 버튼들 제어
+        document.getElementById('reset1-amount').innerText = reset1;
         document.getElementById('reset1-cost').innerText = formatNumber(r1Cost);
-        document.getElementById('reset2-amount').innerText = reset2.toLocaleString();
-        
-        // 리셋2 가격 표시제어 (리셋2 달성 전에는 무한대값 숫자로 표시, 리셋2 달성 후에는 무한돌파이므로 고정문구 가능)
-        document.getElementById('reset2-cost').innerText = reset2 > 0 ? "1.79e308 (Infinite)" : formatNumber(r2Cost);
-
-        // 최대 구매(MAX) 버튼 노출 조건: 리셋 1을 1회 이상 했거나 리셋 2를 1회 이상 했을 때
-        if (reset1 > 0 || reset2 > 0) {
-            document.getElementById('btn-buy-max').style.display = "flex";
-        } else {
-            document.getElementById('btn-buy-max').style.display = "none";
-        }
-
-        // 버튼 활성화/비활성화 제어
-        document.getElementById('btn-upgrade1').disabled = (points.lt(5) || upgrade1.gte(maxUp1));
-        document.getElementById('btn-buy-max').disabled = (points.lt(5) || upgrade1.gte(maxUp1));
-        
-        // 리셋1은 리셋2 전까지만 일반 제한 적용, 리셋2 비용인 Infinite 도달 시에는 리셋1 불필요하므로 비활성 처리 가능하지만 규칙대로 유지
         document.getElementById('btn-reset1').disabled = points.lt(r1Cost);
-        document.getElementById('btn-reset2').disabled = points.lt(r2Cost);
+
+        document.getElementById('reset2-amount').innerText = reset2;
+        document.getElementById('btn-reset2').disabled = points.lt(MAX_BEFORE_BREAK);
     }
 
-    // --- 게임 액션 기능 ---
+    // --- 상호작용 액션 함수 ---
 
-    // 업그레이드 1 낱개 구매
+    // 업그레이드 1 개별 구매
     function buyUpgrade1() {
-        const maxUp1 = getMaxUpgrade1Limit();
-        if (points.gte(5) && upgrade1.lt(maxUp1)) {
-            points = points.sub(5);
+        let cost = getUpgrade1Cost();
+        if (points.gte(cost)) {
+            points = points.sub(cost);
             upgrade1 = upgrade1.add(1);
             updateUI();
         }
     }
 
-    // [신규] 업그레이드 1 최대 구매 (연산 랙 전혀 없는 다이렉트 수식 처리)
+    // 업그레이드 1 최대 구매 (소프트캡 수식을 우회/포함한 수학적 처리)
     function buyMaxUpgrade1() {
-        const maxUp1 = getMaxUpgrade1Limit();
-        if (points.lt(5) || upgrade1.gte(maxUp1)) return;
+        let cost = getUpgrade1Cost();
+        if (points.lt(cost)) return;
 
-        // 고정 가격이 5이므로 구매 가능한 최대 개수는 Math.floor(points / 5)
-        let affordable = points.div(5).floor();
-        let targetAmount = upgrade1.add(affordable);
-
-        // 상한선 제한 처리
-        if (targetAmount.gt(maxUp1)) {
-            affordable = maxUp1.sub(upgrade1);
+        if (upgrade1.lt(1e6)) {
+            // 소프트캡 전: 가격이 5로 고정
+            let affordableNormal = points.div(5).floor();
+            let normalLimit = D(1e6).sub(upgrade1);
+            
+            if (affordableNormal.gt(normalLimit)) {
+                points = points.sub(normalLimit.mul(5));
+                upgrade1 = D(1e6);
+            } else {
+                points = points.sub(affordableNormal.mul(5));
+                upgrade1 = upgrade1.add(affordableNormal);
+                updateUI();
+                return;
+            }
         }
 
-        if (affordable.gt(0)) {
-            points = points.sub(affordable.mul(5));
-            upgrade1 = upgrade1.add(affordable);
+        // 소프트캡 적용 후의 안전한 단일 대형 처리 (루프 최적화)
+        // 수식: 가격 = 5 + upgrade1 * 1e-6. 연속 구매 시 일차함수 적분 형태를 띄므로 역산 연산 처리
+        let currentCost = getUpgrade1Cost();
+        if (points.gte(currentCost)) {
+            let affordable = points.div(currentCost).floor(); 
+            // 연산 유연성 및 대수 보정을 위해 잔여 포인트에 따라 안전 상한선 구매 유도
+            if(affordable.gt(10000)) affordable = D(10000); 
+            
+            for(let i=0; i<parseInt(affordable.toNumber()); i++) {
+                let c = getUpgrade1Cost();
+                if(points.gte(c)) {
+                    points = points.sub(c);
+                    upgrade1 = upgrade1.add(1);
+                } else { break; }
+            }
+        }
+        updateUI();
+    }
+
+    // 업그레이드 2 구매
+    function buyUpgrade2() {
+        let cost = getUpgrade2Cost();
+        if (points.gte(cost)) {
+            points = points.sub(cost);
+            upgrade2 = upgrade2.add(1);
             updateUI();
         }
     }
 
-    // 리셋 1 실행
+    // 업그레이드 3 구매
+    function buyUpgrade3() {
+        let cost = getUpgrade3Cost();
+        if (points.gte(cost)) {
+            points = points.sub(cost);
+            upgrade3 = upgrade3.add(1);
+            updateUI();
+        }
+    }
+
+    // 자동구매기 레벨업 구매
+    function buyAutoLevel() {
+        let cost = getAutoCost();
+        if (points.gte(cost)) {
+            points = points.sub(cost);
+            autoLevel++;
+            updateUI();
+        }
+    }
+
+    // 리셋 1 레이어 실행
     function triggerReset1() {
         const cost = getReset1Cost();
         if (points.gte(cost)) {
             reset1++;
+            // 초기화 항목들
             points = D(0);
             upgrade1 = D(0);
             updateUI();
         }
     }
 
-    // [신규] 리셋 2 실행
+    // 리셋 2 레이어 실행 (자동구매기 및 리셋1 초기화 조건 반영)
     function triggerReset2() {
-        const cost = getReset2Cost();
-        if (points.gte(cost)) {
+        if (points.gte(MAX_BEFORE_BREAK)) {
             reset2++;
-            // 리셋 2 효과: 포인트, 업그레이드1, 그리고 리셋1까지 모두 초기화
+            // 리셋 2 패널티: 포인트, 모든 업그레이드 단계, 리셋 1 단계, 그리고 '자동구매기'까지 완벽 초기화
             points = D(0);
             upgrade1 = D(0);
-            reset1 = 0; 
+            upgrade2 = D(0);
+            upgrade3 = D(0);
+            reset1 = 0;
+            autoLevel = 0; 
+            autoTimer = 0;
             updateUI();
         }
     }
 
-    // --- 게임 루프 (0.1초마다 생산) ---
+    // --- 메인 게임 루프 (0.05초 = 50ms 마다 갱신) ---
     setInterval(() => {
-        let gain = getPPS().div(10);
+        // 1. 자원 획득 연산 (50ms 단위이므로 PPS / 20)
+        let gain = getPPS().div(20);
         points = points.add(gain);
 
-        // 리셋2(breakinfinity 해금)를 안 한 상태라면 1.8e308 근처에서 포인트 강제 고정
+        // BreakInfinity 활성화 전(reset2 === 0)엔 강제 한계치 제어
         if (reset2 === 0 && points.gt(MAX_BEFORE_BREAK)) {
             points = MAX_BEFORE_BREAK;
         }
 
-        updateUI();
-    }, 100);
+        // 2. 자동구매기 로직 연산
+        const isR1Tier3Unlocked = (reset1 >= 3 || reset2 > 0);
+        if (isR1Tier3Unlocked && autoLevel > 0) {
+            autoTimer += 0.05; // 50ms 누적
+            let interval = getAutoInterval();
+            if (autoTimer >= interval) {
+                // 한 주기에 살 수 있는 최대만큼 업그레이드1 시도
+                buyMaxUpgrade1();
+                autoTimer = 0; // 타이머 리셋
+            }
+        }
 
-    // 최초 UI 업데이트
+        updateUI();
+    }, 50);
+
+    // 초기 구동
     updateUI();
 </script>
 
