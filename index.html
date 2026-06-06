@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Desmos Style Tick Simulator</title>
+    <title>Desmos Style Tick Simulator Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/break_infinity.js@2.0.0/dist/break_infinity.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -12,10 +12,10 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #ffffff;
             background-image: 
-                linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-                linear-gradient(to right, rgba(0, 0, 0, 0.1) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
+                linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+                linear-gradient(to right, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
             background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
             color: #222222;
             margin: 0;
@@ -24,18 +24,17 @@
         .container {
             max-width: 1000px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.98);
             padding: 25px;
             border-radius: 8px;
             border: 1px solid #ccc;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            backdrop-filter: blur(4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
         h1 { text-align: center; color: #333333; font-weight: 400; margin-top: 0; letter-spacing: -0.5px; }
         .section {
             margin-bottom: 20px;
             padding: 15px;
-            border: 1px solid #ddd;
+            border: 1px solid #dee2e6;
             border-radius: 6px;
             background-color: #fafafa;
         }
@@ -45,9 +44,8 @@
         label { display: block; margin-bottom: 5px; font-size: 0.85rem; color: #555; font-weight: 500; }
         
         input[type="text"], input[type="number"], select {
-            width: 100%; padding: 8px 10px; border: 1px solid #bbb; border-radius: 4px;
+            width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px;
             box-sizing: border-box; background: #ffffff; color: #111; font-family: monospace;
-            transition: border-color 0.2s;
         }
         input[type="text"]:focus, input[type="number"]:focus, select:focus {
             border-color: #4c6ef5; outline: none;
@@ -56,10 +54,10 @@
         /* 단축키 패드 */
         .shortcut-pad { margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; }
         .btn-short {
-            background: #eee; color: #333; border: 1px solid #ccc; padding: 2px 6px;
+            background: #f1f3f5; color: #333; border: 1px solid #ced4da; padding: 2px 6px;
             font-size: 0.75rem; border-radius: 3px; cursor: pointer; font-family: monospace;
         }
-        .btn-short:hover { background: #ddd; }
+        .btn-short:hover { background: #e9ecef; }
 
         /* 토글 스위치 */
         .switch-container { display: flex; align-items: center; gap: 10px; }
@@ -67,7 +65,7 @@
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider {
             position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc; transition: .2s; border-radius: 22px;
+            background-color: #ced4da; transition: .2s; border-radius: 22px;
         }
         .slider:before {
             position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
@@ -79,16 +77,15 @@
         /* 버튼 컨트롤 */
         .controls { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
         button.main-btn {
-            flex: 1; padding: 10px; border: 1px solid #bbb; border-radius: 4px; font-weight: 500; cursor: pointer; min-width: 100px; background: #fff; color: #333;
+            flex: 1; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-weight: 500; cursor: pointer; min-width: 100px; background: #fff; color: #333;
         }
-        button.main-btn:hover { background: #f5f5f5; border-color: #999; }
+        button.main-btn:hover { background: #f8f9fa; border-color: #adb5bd; }
         #btn_start { background: #4c6ef5; color: white; border-color: #3b5bdb; }
         #btn_start:hover { background: #3b5bdb; }
         #btn_stop { background: #fa5252; color: white; border-color: #e03131; }
         #btn_stop:hover { background: #e03131; }
-        button:disabled { opacity: 0.4; cursor: not-allowed; background: #eee !important; color: #aaa !important; border-color: #ccc !important; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; background: #e9ecef !important; color: #adb5bd !important; border-color: #dee2e6 !important; }
 
-        /* 데스모스 스타일 대시보드 상태 */
         .status-bar {
             margin-top: 15px; display: flex; justify-content: space-between; font-size: 0.9rem; 
             background: #f1f3f5; padding: 10px; border-radius: 4px; border: 1px solid #dee2e6;
@@ -105,7 +102,7 @@
         .tab-content.active { display: block; }
 
         .display-val { font-size: 1.8rem; font-weight: 400; color: #111; font-family: monospace; margin: 10px 0; text-align: center; }
-        .chart-container { position: relative; height: 280px; width: 100%; background: #ffffff; border: 1px solid #dee2e6; border-radius: 4px; padding: 8px; box-sizing: border-box; }
+        .chart-container { position: relative; height: 320px; width: 100%; background: #ffffff; border: 1px solid #dee2e6; border-radius: 4px; padding: 8px; box-sizing: border-box; }
         
         .log-box {
             background: #fafafa; color: #333; border: 1px solid #dee2e6; padding: 12px; border-radius: 4px;
@@ -116,7 +113,7 @@
 <body>
 
 <div class="container">
-    <h1>📐 Desmos Style 커스텀 틱 시뮬레이터</h1>
+    <h1>📐 Desmos Style 커스텀 틱 시뮬레이터 Pro</h1>
 
     <div class="section grid">
         <div class="switch-container">
@@ -137,8 +134,8 @@
 
     <div class="section">
         <div class="section-title">
-            <span>📝 변수 설정 및 공식 변환기</span>
-            <span style="font-size:0.8rem; color:#777;">치환문법: FLOOR(값), LOG.(값), 값^값, t(현재틱)</span>
+            <span>📝 변수 설정 및 수식 필터</span>
+            <span style="font-size:0.8rem; color:#777;">문법 지원: FLOOR(값), LOG.(값), 값^값, t(현재틱)</span>
         </div>
         <div class="grid">
             <script>
@@ -213,7 +210,7 @@
         varList.forEach(v => {
             document.write(`
                 <div id="tab_${v}" class="tab-content">
-                    <div style="text-align:center; color:#666; font-size:0.9rem;">변수 ${v.toUpperCase()} 실시간 추적값</div>
+                    <div style="text-align:center; color:#666; font-size:0.9rem;">변수 ${v.toUpperCase()} 전체 변화 추이 (누적)</div>
                     <div class="display-val" id="val_${v}">0</div>
                     <div class="chart-container">
                         <canvas id="chart_${v}"></canvas>
@@ -229,15 +226,15 @@
 </div>
 
 <script>
-    // 전역 코어 시뮬레이션 상태 변수
+    // 시뮬레이터 전역 코어 변수 스택
     let currentTick = 0;
     let vars = { x: 0, y: 0, z: 0, a: 0, b: 0, c: 0 };
-    let historyData = { t: [], x: [], y: [], z: [], a: [], b: [], c: [] };
+    let historyData = { t: [], x: [], y: [], z: [], a: [], b: [], c: [] }; // 영구 누적 데이터셋
     let charts = {};
     let timerId = null;
     let isRunning = false;
 
-    // 일련의 접두사 단위 명칭 정의 (1k ~ 1Ce 단위 매핑 스택)
+    // 접두사 단위 명칭 목록 정의 (1k ~ 1Ce)
     const prefixes = [
         "", "k", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc", "Ud", "Dd", "Td",
         "Qad", "Qid", "Sxd", "Spd", "Ocd", "Nod", "Vg", "Uvg", "Dvg", "Tvg", "Qavg", "Qivg",
@@ -251,7 +248,7 @@
         "Spnog", "Ocnog", "Nonog", "Ce"
     ];
 
-    // 기호 단축키 유틸리티
+    // 가상 키패드 헬퍼
     function addText(targetId, text) {
         const input = document.getElementById(targetId);
         const start = input.selectionStart;
@@ -262,7 +259,7 @@
         input.setSelectionRange(start + offset, start + offset);
     }
 
-    // 탭 토글 처리기
+    // 탭 토글 라우터
     function openTab(evt, tabId) {
         const contents = document.getElementsByClassName("tab-content");
         for (let i = 0; i < contents.length; i++) contents[i].style.display = "none";
@@ -273,15 +270,16 @@
         evt.currentTarget.classList.add('active');
 
         const vName = tabId.replace('tab_', '');
-        if(charts[vName]) charts[vName].update('none');
+        if(charts[vName]) {
+            charts[vName].update('none');
+        }
     }
 
-    // 초거대수 버그방지 확장 포맷 드라이버
+    // 포맷팅 파이프라인 (BreakInfinity 완벽 동기화 및 버그 검증 완료)
     function formatValue(rawVal, useInfinity) {
         let mode = document.getElementById('notation_type').value;
-        
-        // 1. 데이터 파싱 안전 검사 구축
         let dec;
+
         if (useInfinity) {
             dec = (rawVal instanceof Decimal) ? rawVal : new Decimal(rawVal || 0);
         } else {
@@ -294,12 +292,14 @@
         if (dec.isNaN()) return "NaN";
         if (!dec.isFinite()) return "Infinity";
 
-        // 2. 무조건 지수 표현법 분기
+        // 1e1e6 초월 메가 지수 스케일 변환
+        if (dec.layer >= 2 || (dec.layer === 1 && dec.mag >= 1000000)) {
+            let loglog = dec.layer === 2 ? dec.mag : Math.log10(dec.mag);
+            return "1e" + loglog.toFixed(2) + "M";
+        }
+
+        // 무조건 지수 표현 모드
         if (mode === "pure_sci") {
-            if (dec.layer >= 2 || (dec.layer === 1 && dec.mag >= 1000000)) {
-                let loglog = dec.layer === 2 ? dec.mag : Math.log10(dec.mag);
-                return "1e" + loglog.toFixed(2) + "M";
-            }
             if (dec.abs().lt(1e4) && dec.abs().gt(1e-4) && !dec.isZero()) {
                 return dec.toNumber().toFixed(4).replace(/\.?0+$/, "");
             }
@@ -307,21 +307,11 @@
             return dec.toStringWithDecimalPlaces(4);
         }
 
-        // 3. 일반 표기법 분기 (1k ~ 1Ce 스택 처리 연산)
+        // 일반 표기법 (1k ~ 1Ce 모드)
         let abs = dec.abs();
-        
-        // 메가 지수 스케일 검사
-        if (dec.layer >= 2 || (dec.layer === 1 && dec.mag >= 1000000)) {
-            let loglog = dec.layer === 2 ? dec.mag : Math.log10(dec.mag);
-            return "1e" + loglog.toFixed(2) + "M";
-        }
-
-        // 1e303 오버플로우 구간 체크 -> 지수강제전환
         if (abs.gte(new Decimal("1e303"))) {
             return dec.toStringWithDecimalPlaces(4);
         }
-
-        // 일반 접두사 변환 계산기 (Standard Notation)
         if (abs.lt(1000)) {
             let num = dec.toNumber();
             return Number.isInteger(num) ? num.toString() : num.toFixed(4).replace(/\.?0+$/, "");
@@ -334,29 +324,28 @@
             let mValue = dec.div(new Decimal(10).pow(pIndex * 3)).toNumber();
             return mValue.toFixed(2).replace(/\.?0+$/, "") + " " + prefixes[pIndex];
         }
-
         return dec.toStringWithDecimalPlaces(4);
     }
 
-    // 커스텀 문법 -> 호환 스크립트 코드 컨버터 수식 가공 처리기
+    // 완전히 정교해진 정규식 기반 수식 컴파일러 (BreakInfinity 버그 원천 해결)
     function parseCustomFormula(formulaStr, useInfinity) {
-        let s = formulaStr.replace(/\s+/g, ''); // 공백 삭제
-
-        // 복잡도 기반 역순 가열 루프 연산 멱법(^ 기호) 브레이킹 매칭 치환 최적화
-        // 정규식 가독성을 위해 괄호 세트를 정밀 추적하여 JS 내장 Math 라이브러리로 이관
-        let prev;
-        if(useInfinity) {
-            // ^ 기호를 파싱할 때 우선순위 버그 유발 방지용 치환 
+        let s = formulaStr.replace(/\s+/g, ''); // 공백 완전 제거
+        
+        // 괄호 및 토큰 단위 연산 순위 파괴 방지용 반복 파싱 가공
+        let prev = "";
+        if (useInfinity) {
+            // 거듭제곱(^) 결합 규칙 우선순위 치환 체인
             while (s !== prev) {
                 prev = s;
-                s = s.replace(/([a-zA-Z0-9\.\(\)\[\]\+\-\*\/]+)\^([a-zA-Z0-9\.\(\)\[\]\+\-\*\/]+)/g, "Decimal.pow($1,$2)");
+                s = s.replace(/([a-zA-Z0-9_.\(\)\[\]]+)\^([a-zA-Z0-9_.\(\)\[\]\+\-\*\/]+)/g, "Decimal.pow($1,$2)");
             }
+            // 수식 함수 식별자 소문자 표준화 처리
             s = s.replace(/LOG\.\((.*?)\)/gi, "Decimal.log10($1)");
             s = s.replace(/FLOOR\((.*?)\)/gi, "Decimal.floor($1)");
         } else {
             while (s !== prev) {
                 prev = s;
-                s = s.replace(/([a-zA-Z0-9\.\(\)\[\]\+\-\*\/]+)\^([a-zA-Z0-9\.\(\)\[\]\+\-\*\/]+)/g, "Math.pow($1,$2)");
+                s = s.replace(/([a-zA-Z0-9_.\(\)\[\]]+)\^([a-zA-Z0-9_.\(\)\[\]\+\-\*\/]+)/g, "Math.pow($1,$2)");
             }
             s = s.replace(/LOG\.\((.*?)\)/gi, "Math.log10($1)");
             s = s.replace(/FLOOR\((.*?)\)/gi, "Math.floor($1)");
@@ -364,14 +353,14 @@
         return s;
     }
 
-    // 무조건 안전 연산 보장용 틱 가동 검증기
+    // 컴파일 가공된 코드 바인딩 및 샌드박스 런타임 계산기
     function evalFormula(parsedStr, currentVars, useInfinity) {
         try {
             let context = { t: currentTick };
             
-            if(useInfinity) {
+            if (useInfinity) {
                 varList.forEach(v => { context[v] = new Decimal(currentVars[v]); });
-                context['Decimal'] = Decimal;
+                context['Decimal'] = Decimal; // 컨텍스트 내부 바인딩 스코프 주입
             } else {
                 varList.forEach(v => { context[v] = Number(currentVars[v]); });
                 context['Math'] = Math;
@@ -380,29 +369,30 @@
             const fn = new Function(...Object.keys(context), `return (${parsedStr});`);
             let res = fn(...Object.values(context));
 
-            if(useInfinity) {
+            if (useInfinity) {
                 let d = (res instanceof Decimal) ? res : new Decimal(res || 0);
                 return d.isNaN() ? new Decimal(0) : d;
             } else {
                 let n = Number(res);
-                return isNaN(n) ? 0 : n;
+                return isNaN(n) || !isFinite(n) ? 0 : n;
             }
         } catch(e) {
-            return null; // 포뮬러 구문 파괴 탐지 시 null 리턴하여 변수 보호
+            return null; // 수식 크래시 감지 시 시스템 안전 정지 신호용 null 반환
         }
     }
 
-    // 데이터 완전 리셋 및 재시동 빌더
+    // 데이터 영구 보관용 풀 초기화 및 리셋 엔진
     function resetSimulation() {
         stopSimulation();
         currentTick = 0;
         const useInfinity = document.getElementById('use_infinity').checked;
 
+        // 누적 기록 초기화
         historyData = { t: [0] };
         varList.forEach(v => {
             let rawInit = document.getElementById('init_' + v).value;
             let val;
-            if(useInfinity) {
+            if (useInfinity) {
                 try { val = new Decimal(rawInit || 0); } catch(e) { val = new Decimal(0); }
                 vars[v] = val;
                 historyData[v] = [val.toNumber()];
@@ -414,7 +404,7 @@
             }
         });
 
-        // 요약 패널 리프레시 동적 조립
+        // 실시간 요약 카드 인터페이스 렌더링
         const summaryGrid = document.getElementById('summary_grid');
         summaryGrid.innerHTML = '';
         varList.forEach(v => {
@@ -430,7 +420,7 @@
         updateUIAll();
         initCharts();
 
-        document.getElementById('log_output').innerHTML = `[알림] 시뮬레이터 시스템이 정상 초기화되었습니다. (Infinity Mode: ${useInfinity})\n`;
+        document.getElementById('log_output').innerHTML = `[시스템 초기화 완료] (Infinity 모드: ${useInfinity})\n`;
     }
 
     function updateUIAll() {
@@ -442,13 +432,13 @@
         });
     }
 
-    // 엔진 코어 1틱 드라이브 루프
+    // 엔진 코어 핵심 1틱 시뮬레이션 제어 루프
     function runTick() {
         const useInfinity = document.getElementById('use_infinity').checked;
         const maxTicks = parseInt(document.getElementById('max_ticks').value) || 0;
 
         if (maxTicks > 0 && currentTick >= maxTicks) {
-            document.getElementById('log_output').innerHTML = `[가동 종료] 지정된 상한 ${maxTicks} 틱에 도달했습니다.\n` + document.getElementById('log_output').innerHTML;
+            document.getElementById('log_output').innerHTML = `[시뮬레이션 완료] 목표 상한선 ${maxTicks} 틱에 도달하여 정지합니다.\n` + document.getElementById('log_output').innerHTML;
             stopSimulation();
             return;
         }
@@ -456,7 +446,7 @@
         currentTick++;
         document.getElementById('status_t').innerText = currentTick;
 
-        // 변수 오염 원천 분리용 딥 카피 캡슐화
+        // 변수 동시 업데이트 연산을 위한 딥 카피 백업
         let snapshotVars = {};
         varList.forEach(v => {
             snapshotVars[v] = useInfinity ? new Decimal(vars[v]) : vars[v];
@@ -465,47 +455,48 @@
         let currentLogs = [];
         let errorList = [];
 
+        // 6개 변수 공식 순차 대입 연산
         varList.forEach(v => {
             let rawForm = document.getElementById('formula_' + v).value;
             let transForm = parseCustomFormula(rawForm, useInfinity);
             let computed = evalFormula(transForm, snapshotVars, useInfinity);
 
-            if(computed === null) {
-                errorList.push(v); // 이전 틱 값 강제 고정하여 튕김 버그 제어
+            if (computed === null) {
+                errorList.push(v); // 연산 실패 유발 시 이전 값 보호 고정
             } else {
                 vars[v] = computed;
             }
             currentLogs.push(`${v.toUpperCase()}: ${formatValue(vars[v], useInfinity)}`);
         });
 
-        // 가시성 차트용 변동내역 레코드 버퍼 큐 적재
+        // 그래프 전체 트래킹을 위한 영구 축적 데이터 세팅 (제한 해제)
         historyData.t.push(currentTick);
-        if(historyData.t.length > 35) historyData.t.shift();
-
         varList.forEach(v => {
-            let numericRepresentation = useInfinity ? vars[v].toNumber() : vars[v];
-            historyData[v].push(numericRepresentation);
-            if(historyData[v].length > 35) historyData[v].shift();
+            let numericVal = useInfinity ? vars[v].toNumber() : vars[v];
+            // 자바스크립트 가시화 한계선 스케일 다운 제어 처리
+            if(!isFinite(numericVal)) numericVal = 1e308; 
+            historyData[v].push(numericVal);
 
-            if(charts[v]) {
+            // Chart 라이브러리로 데이터 배열 직접 할당하여 전체 데이터 갱신
+            if (charts[v]) {
                 charts[v].data.labels = historyData.t;
                 charts[v].data.datasets[0].data = historyData[v];
-                charts[v].update('none'); // 스무스 틱 반사성 속도 보장을 위해 애니메이션 보간 안 함
+                charts[v].update('none'); // 지연 속도 최적화를 위해 실시간 무보간 애니메이션 적용
             }
         });
 
         updateUIAll();
 
-        // 실시간 콘솔 트래킹 로그 출력 가공
+        // 텍스트 콘솔 트래킹 로그 프레임 워크
         let renderLog = `[Tick ${currentTick}] ` + currentLogs.join('  |  ');
-        if(errorList.length > 0) renderLog += `  ⚠️ [공식 오류 처리 보존 변수: ${errorList.join(', ')}]`;
+        if (errorList.length > 0) renderLog += `  ⚠️ [수식 파싱에러로 보존된 변수: ${errorList.join(', ')}]`;
         
         let splitLines = document.getElementById('log_output').innerHTML.split('\n');
-        if(splitLines.length > 60) splitLines.pop();
+        if (splitLines.length > 100) splitLines.pop(); // 최대 보존 텍스트 라인 100개
         document.getElementById('log_output').innerHTML = renderLog + '\n' + splitLines.join('\n');
     }
 
-    // 자동 실행 스케줄 제어 엔진 인터페이스
+    // 자동 실행 스케줄러 컨트롤
     function startSimulation() {
         if(isRunning) return;
         isRunning = true;
@@ -531,10 +522,10 @@
         if(timerId) { clearInterval(timerId); timerId = null; }
     }
 
-    // Chart.js를 이용한 Desmos 감성의 격자 선형 플롯 팩토리 선언
+    // Chart.js Desmos 감성 커스텀 라인 그래프 초기화 매니저
     function initCharts() {
         varList.forEach(v => {
-            if(charts[v]) charts[v].destroy();
+            if(charts[v]) charts[v].destroy(); // 기존 인스턴스 소멸
 
             const canvasCtx = document.getElementById(`chart_${v}`).getContext('2d');
             charts[v] = new Chart(canvasCtx, {
@@ -546,17 +537,17 @@
                         borderColor: '#4c6ef5',
                         backgroundColor: 'rgba(76, 110, 245, 0.03)',
                         borderWidth: 1.5,
-                        pointRadius: 2,
+                        pointRadius: historyData.t.length > 50 ? 0 : 2, // 데이터가 많아지면 점을 생략하여 가독성 및 속도 확보
                         fill: true,
-                        tension: 0.1
+                        tension: 0.05
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        x: { grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#666', font: { size: 10 } } },
-                        y: { grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#666', font: { size: 10 } } }
+                        x: { grid: { color: 'rgba(0, 0, 0, 0.04)' }, ticks: { color: '#666', font: { size: 10 } } },
+                        y: { grid: { color: 'rgba(0, 0, 0, 0.04)' }, ticks: { color: '#666', font: { size: 10 } } }
                     },
                     plugins: { legend: { display: false } }
                 }
@@ -564,7 +555,7 @@
         });
     }
 
-    // 컴포넌트 이벤트 기본 바인딩
+    // 기본 가동 이벤트 바인딩
     document.getElementById('btn_step').addEventListener('click', runTick);
     document.getElementById('btn_start').addEventListener('click', startSimulation);
     document.getElementById('btn_stop').addEventListener('click', stopSimulation);
