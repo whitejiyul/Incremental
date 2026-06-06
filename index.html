@@ -3,41 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Desmos Style Tick Simulator Pro</title>
+    <title>Desmos Style Ultimate Simulator</title>
     <script src="https://cdn.jsdelivr.net/npm/break_infinity.js@2.0.0/dist/break_infinity.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Desmos 스타일 하얀 격자 테마 정의 */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #ffffff;
             background-image: 
-                linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
-                linear-gradient(to right, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
-            background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
-            color: #222222;
-            margin: 0;
-            padding: 20px;
+                linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #222222; margin: 0; padding: 20px;
         }
         .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.98);
-            padding: 25px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            max-width: 900px; margin: 0 auto; background: #ffffff;
+            padding: 25px; border-radius: 8px; border: 1px solid #ddd;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
-        h1 { text-align: center; color: #333333; font-weight: 400; margin-top: 0; letter-spacing: -0.5px; }
-        .section {
-            margin-bottom: 20px;
-            padding: 15px;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            background-color: #fafafa;
-        }
+        h1 { text-align: center; color: #333; font-weight: 400; margin-top: 0; }
+        .section { margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 6px; background-color: #fafafa; }
         .section-title { font-weight: 600; margin-bottom: 12px; color: #444; display: flex; justify-content: space-between; }
         .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         @media(max-width: 600px) { .grid { grid-template-columns: 1fr; } }
@@ -47,11 +32,8 @@
             width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px;
             box-sizing: border-box; background: #ffffff; color: #111; font-family: monospace;
         }
-        input[type="text"]:focus, input[type="number"]:focus, select:focus {
-            border-color: #4c6ef5; outline: none;
-        }
+        input.error-field { border-color: #fa5252 !important; background-color: #fff5f5 !important; }
         
-        /* 단축키 패드 */
         .shortcut-pad { margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; }
         .btn-short {
             background: #f1f3f5; color: #333; border: 1px solid #ced4da; padding: 2px 6px;
@@ -59,61 +41,37 @@
         }
         .btn-short:hover { background: #e9ecef; }
 
-        /* 토글 스위치 */
         .switch-container { display: flex; align-items: center; gap: 10px; }
         .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ced4da; transition: .2s; border-radius: 22px;
-        }
-        .slider:before {
-            position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
-            background-color: white; transition: .2s; border-radius: 50%;
-        }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ced4da; transition: .2s; border-radius: 22px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .2s; border-radius: 50%; }
         input:checked + .slider { background-color: #4c6ef5; }
         input:checked + .slider:before { transform: translateX(22px); }
 
-        /* 버튼 컨트롤 */
         .controls { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
-        button.main-btn {
-            flex: 1; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-weight: 500; cursor: pointer; min-width: 100px; background: #fff; color: #333;
-        }
-        button.main-btn:hover { background: #f8f9fa; border-color: #adb5bd; }
+        button.main-btn { flex: 1; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-weight: 500; cursor: pointer; min-width: 100px; background: #fff; }
+        button.main-btn:hover { background: #f8f9fa; }
         #btn_start { background: #4c6ef5; color: white; border-color: #3b5bdb; }
-        #btn_start:hover { background: #3b5bdb; }
         #btn_stop { background: #fa5252; color: white; border-color: #e03131; }
-        #btn_stop:hover { background: #e03131; }
-        button:disabled { opacity: 0.4; cursor: not-allowed; background: #e9ecef !important; color: #adb5bd !important; border-color: #dee2e6 !important; }
+        button:disabled { opacity: 0.3; cursor: not-allowed; background: #e9ecef !important; }
 
-        .status-bar {
-            margin-top: 15px; display: flex; justify-content: space-between; font-size: 0.9rem; 
-            background: #f1f3f5; padding: 10px; border-radius: 4px; border: 1px solid #dee2e6;
-        }
-
-        /* 탭 구조 */
+        .status-bar { margin-top: 15px; display: flex; justify-content: space-between; font-size: 0.9rem; background: #f1f3f5; padding: 10px; border-radius: 4px; border: 1px solid #dee2e6; }
         .tabs { display: flex; border-bottom: 2px solid #dee2e6; margin-top: 20px; overflow-x: auto; gap: 4px; }
-        .tab-btn {
-            background: #f8f9fa; border: 1px solid #dee2e6; border-bottom: none; color: #666; padding: 8px 16px; cursor: pointer;
-            font-weight: 500; border-radius: 4px 4px 0 0; white-space: nowrap; margin-bottom: -2px;
-        }
+        .tab-btn { background: #f8f9fa; border: 1px solid #dee2e6; border-bottom: none; color: #666; padding: 8px 16px; cursor: pointer; border-radius: 4px 4px 0 0; white-space: nowrap; }
         .tab-btn.active { background: #fff; color: #4c6ef5; border-color: #dee2e6 #dee2e6 transparent #dee2e6; border-top: 3px solid #4c6ef5; font-weight: bold; }
         .tab-content { display: none; padding: 20px 0; }
         .tab-content.active { display: block; }
 
-        .display-val { font-size: 1.8rem; font-weight: 400; color: #111; font-family: monospace; margin: 10px 0; text-align: center; }
-        .chart-container { position: relative; height: 320px; width: 100%; background: #ffffff; border: 1px solid #dee2e6; border-radius: 4px; padding: 8px; box-sizing: border-box; }
-        
-        .log-box {
-            background: #fafafa; color: #333; border: 1px solid #dee2e6; padding: 12px; border-radius: 4px;
-            height: 180px; overflow-y: auto; font-family: monospace; font-size: 0.85rem; white-space: pre-wrap; line-height: 1.4;
-        }
+        .display-val { font-size: 1.8rem; color: #111; font-family: monospace; margin: 10px 0; text-align: center; }
+        .chart-container { position: relative; height: 300px; width: 100%; background: #ffffff; border: 1px solid #dee2e6; border-radius: 4px; padding: 8px; box-sizing: border-box; }
+        .log-box { background: #fafafa; color: #333; border: 1px solid #dee2e6; padding: 12px; border-radius: 4px; height: 150px; overflow-y: auto; font-family: monospace; font-size: 0.85rem; white-space: pre-wrap; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>📐 Desmos Style 커스텀 틱 시뮬레이터 Pro</h1>
+    <h1>📐 Desmos Style 커스텀 시뮬레이터 Engine</h1>
 
     <div class="section grid">
         <div class="switch-container">
@@ -124,36 +82,32 @@
             </label>
         </div>
         <div>
-            <label>숫자 표기법 방식 선택:</label>
+            <label>숫자 표기법 선택:</label>
             <select id="notation_type" onchange="updateUIAll()">
-                <option value="standard">일반 표기법 (1k ~ 1Ce 단위 적용 / 1e303↑ 지수)</option>
+                <option value="standard">일반 표기법 (1k ~ 1Ce 단위 / 1e303↑ 지수)</option>
                 <option value="pure_sci">무조건 지수 표현법 (Scientific)</option>
             </select>
         </div>
     </div>
 
     <div class="section">
-        <div class="section-title">
-            <span>📝 변수 설정 및 수식 필터</span>
-            <span style="font-size:0.8rem; color:#777;">문법 지원: FLOOR(값), LOG.(값), 값^값, t(현재틱)</span>
-        </div>
+        <div class="section-title">📝 변수 공식 설정</div>
         <div class="grid">
             <script>
                 const varList = ['x', 'y', 'z', 'a', 'b', 'c'];
-                const defaultFormulas = { x: 'x + 1', y: 'y + t', z: 'x ^ 2', a: 'LOG.(x + 1)', b: 'FLOOR(y / 2)', c: '10 ^ 300' };
+                const defaultFormulas = { x: 'x + 1', y: 'y + t', z: 'x ^ 2', a: 'LOG.(x + 1)', b: 'FLOOR(y / 2)', c: '10 ^ 50' };
                 const defaultInits = { x: '0', y: '0', z: '0', a: '0', b: '0', c: '1' };
 
                 varList.forEach(v => {
                     document.write(`
                         <div>
                             <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <label style="font-weight:bold; color:#333;">변수 ${v.toUpperCase()} 공식 & 초기값</label>
-                                <input type="text" id="init_${v}" value="${defaultInits[v]}" style="width:70px; padding:3px; text-align:center; font-size:0.8rem;" placeholder="초기값">
+                                <label style="font-weight:bold;">변수 ${v.toUpperCase()} 공식 & 초기값</label>
+                                <input type="text" id="init_${v}" value="${defaultInits[v]}" style="width:65px; padding:2px; text-align:center; font-size:0.8rem;">
                             </div>
                             <input type="text" id="formula_${v}" value="${defaultFormulas[v]}" style="margin-top:4px;">
-                            <div class="shortcut-pad" data-target="formula_${v}">
-                                <button class="btn-short" onclick="addText('formula_${v}','x')">x</button>
-                                <button class="btn-short" onclick="addText('formula_${v}','y')">y</button>
+                            <div class="shortcut-pad">
+                                <button class="btn-short" onclick="addText('formula_${v}','${v}')">${v}</button>
                                 <button class="btn-short" onclick="addText('formula_${v}','t')">t</button>
                                 <button class="btn-short" onclick="addText('formula_${v}','+')">+</button>
                                 <button class="btn-short" onclick="addText('formula_${v}','*')">*</button>
@@ -170,14 +124,8 @@
     </div>
 
     <div class="section grid">
-        <div>
-            <label>자동 틱 실행 주기 (초):</label>
-            <input type="number" id="interval_sec" value="0.3" step="0.1" min="0.1">
-        </div>
-        <div>
-            <label>목표 제한 틱 (0은 영원히):</label>
-            <input type="number" id="max_ticks" value="0" min="0">
-        </div>
+        <div><label>실행 주기 (초):</label><input type="number" id="interval_sec" value="0.2" step="0.1" min="0.1"></div>
+        <div><label>목표 틱 제한 (0은 무한):</label><input type="number" id="max_ticks" value="0" min="0"></div>
     </div>
 
     <div class="controls">
@@ -188,239 +136,161 @@
     </div>
 
     <div class="status-bar">
-        <span>엔진 상태: <b id="status_text" style="color:#666;">대기중</b></span>
+        <span>엔진 상태: <b id="status_text">대기중</b></span>
         <span>진행 틱: <b id="status_t" style="color:#4c6ef5;">0</b></span>
     </div>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="openTab(event, 'tab_summary')">실시간 대시보드</button>
-        <script>
-            varList.forEach(v => {
-                document.write(`<button class="tab-btn" onclick="openTab(event, 'tab_${v}')">${v.toUpperCase()}</button>`);
-            });
-        </script>
-        <button class="tab-btn" onclick="openTab(event, 'tab_logs')">텍스트 로그</button>
+        <button class="tab-btn active" onclick="openTab(event, 'tab_summary')">대시보드</button>
+        <script>varList.forEach(v => { document.write(`<button class="tab-btn" onclick="openTab(event, 'tab_${v}')">${v.toUpperCase()}</button>`); });</script>
+        <button class="tab-btn" onclick="openTab(event, 'tab_logs')">로그</button>
     </div>
 
-    <div id="tab_summary" class="tab-content active">
-        <div class="grid" id="summary_grid"></div>
-    </div>
-
+    <div id="tab_summary" class="tab-content active"><div class="grid" id="summary_grid"></div></div>
     <script>
         varList.forEach(v => {
             document.write(`
                 <div id="tab_${v}" class="tab-content">
-                    <div style="text-align:center; color:#666; font-size:0.9rem;">변수 ${v.toUpperCase()} 전체 변화 추이 (누적)</div>
                     <div class="display-val" id="val_${v}">0</div>
-                    <div class="chart-container">
-                        <canvas id="chart_${v}"></canvas>
-                    </div>
+                    <div class="chart-container"><canvas id="chart_${v}"></canvas></div>
                 </div>
             `);
         });
     </script>
-
-    <div id="tab_logs" class="tab-content">
-        <div class="log-box" id="log_output">시뮬레이션을 시작하세요.</div>
-    </div>
+    <div id="tab_logs" class="tab-content"><div class="log-box" id="log_output"></div></div>
 </div>
 
 <script>
-    // 시뮬레이터 전역 코어 변수 스택
+    window._D = Decimal; // 변수명 충돌 원천 차단을 위해 글로벌 네임스페이스 격리 보호
     let currentTick = 0;
     let vars = { x: 0, y: 0, z: 0, a: 0, b: 0, c: 0 };
-    let historyData = { t: [], x: [], y: [], z: [], a: [], b: [], c: [] }; // 영구 누적 데이터셋
-    let charts = {};
-    let timerId = null;
-    let isRunning = false;
+    let historyData = { t: [], x: [], y: [], z: [], a: [], b: [], c: [] };
+    let charts = {}; let timerId = null; let isRunning = false;
 
-    // 접두사 단위 명칭 목록 정의 (1k ~ 1Ce)
-    const prefixes = [
-        "", "k", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc", "Ud", "Dd", "Td",
-        "Qad", "Qid", "Sxd", "Spd", "Ocd", "Nod", "Vg", "Uvg", "Dvg", "Tvg", "Qavg", "Qivg",
-        "Sxvg", "Spvg", "Ocvg", "Novg", "Tg", "Utg", "Dtg", "Ttg", "Qatg", "Qitg", "Sxtg",
-        "Sptg", "Octg", "Notg", "Qag", "Uqag", "Dqag", "Tqag", "Qaqag", "Qiqag", "Sxqag",
-        "Spqag", "Ocqag", "Noqag", "Qin", "Uqin", "Dqin", "Tqin", "Qaqin", "Qiqin", "Sxqin",
-        "Spqin", "Ocqin", "Noqin", "Sxg", "Usxg", "Dsxg", "Tsxg", "Qasxg", "Qisxg", "Sxxxg",
-        "Spxxg", "Ocxg", "Noxg", "Spg", "Uspg", "Dspg", "Tspg", "Qaspg", "Qispg", "Sxspg",
-        "Spspg", "Ocspg", "Nospg", "Ocg", "Uocg", "Docg", "Tocg", "Qaocg", "Qiocg", "Sxocg",
-        "Spocg", "Ococg", "Noocg", "Nog", "Unog", "Dnog", "Tnog", "Qanog", "Qinog", "Sxnog",
-        "Spnog", "Ocnog", "Nonog", "Ce"
-    ];
+    const prefixes = ["", "k", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc", "Ud", "Dd", "Td", "Ce"];
 
-    // 가상 키패드 헬퍼
-    function addText(targetId, text) {
-        const input = document.getElementById(targetId);
+    function addText(id, text) {
+        const input = document.getElementById(id);
         const start = input.selectionStart;
-        const end = input.selectionEnd;
-        input.value = input.value.substring(0, start) + text + input.value.substring(end);
+        input.value = input.value.substring(0, start) + text + input.value.substring(input.selectionEnd);
         input.focus();
         let offset = text.includes('()') ? text.length - 1 : text.length;
         input.setSelectionRange(start + offset, start + offset);
     }
 
-    // 탭 토글 라우터
     function openTab(evt, tabId) {
         const contents = document.getElementsByClassName("tab-content");
         for (let i = 0; i < contents.length; i++) contents[i].style.display = "none";
         const tabs = document.getElementsByClassName("tab-btn");
         for (let i = 0; i < tabs.length; i++) tabs[i].classList.remove("active");
-        
         document.getElementById(tabId).style.display = "block";
         evt.currentTarget.classList.add('active');
-
-        const vName = tabId.replace('tab_', '');
-        if(charts[vName]) {
-            charts[vName].update('none');
-        }
+        const v = tabId.replace('tab_', '');
+        if(charts[v]) charts[v].update('none');
     }
 
-    // 포맷팅 파이프라인 (BreakInfinity 완벽 동기화 및 버그 검증 완료)
     function formatValue(rawVal, useInfinity) {
         let mode = document.getElementById('notation_type').value;
-        let dec;
+        let d = useInfinity ? ((rawVal instanceof _D) ? rawVal : new _D(rawVal || 0)) : new _D(Number(rawVal) || 0);
+        
+        if (d.isNaN()) return "NaN";
+        if (!d.isFinite()) return "Infinity";
+        if (d.layer >= 2 || (d.layer === 1 && d.mag >= 1000000)) return "1e" + (d.layer === 2 ? d.mag : Math.log10(d.mag)).toFixed(2) + "M";
+        if (mode === "pure_sci") return d.isZero() ? "0" : d.toStringWithDecimalPlaces(4);
 
-        if (useInfinity) {
-            dec = (rawVal instanceof Decimal) ? rawVal : new Decimal(rawVal || 0);
-        } else {
-            let n = Number(rawVal);
-            if (isNaN(n)) return "NaN";
-            if (!isFinite(n)) return "Infinity";
-            dec = new Decimal(n);
-        }
-
-        if (dec.isNaN()) return "NaN";
-        if (!dec.isFinite()) return "Infinity";
-
-        // 1e1e6 초월 메가 지수 스케일 변환
-        if (dec.layer >= 2 || (dec.layer === 1 && dec.mag >= 1000000)) {
-            let loglog = dec.layer === 2 ? dec.mag : Math.log10(dec.mag);
-            return "1e" + loglog.toFixed(2) + "M";
-        }
-
-        // 무조건 지수 표현 모드
-        if (mode === "pure_sci") {
-            if (dec.abs().lt(1e4) && dec.abs().gt(1e-4) && !dec.isZero()) {
-                return dec.toNumber().toFixed(4).replace(/\.?0+$/, "");
-            }
-            if (dec.isZero()) return "0";
-            return dec.toStringWithDecimalPlaces(4);
-        }
-
-        // 일반 표기법 (1k ~ 1Ce 모드)
-        let abs = dec.abs();
-        if (abs.gte(new Decimal("1e303"))) {
-            return dec.toStringWithDecimalPlaces(4);
-        }
-        if (abs.lt(1000)) {
-            let num = dec.toNumber();
-            return Number.isInteger(num) ? num.toString() : num.toFixed(4).replace(/\.?0+$/, "");
-        }
-
+        let abs = d.abs();
+        if (abs.gte(new _D("1e303"))) return d.toStringWithDecimalPlaces(4);
+        if (abs.lt(1000)) { let n = d.toNumber(); return Number.isInteger(n) ? n.toString() : n.toFixed(4).replace(/\.?0+$/, ""); }
+        
         let exp = abs.log10().floor().toNumber();
         let pIndex = Math.floor(exp / 3);
-        
         if (pIndex < prefixes.length) {
-            let mValue = dec.div(new Decimal(10).pow(pIndex * 3)).toNumber();
-            return mValue.toFixed(2).replace(/\.?0+$/, "") + " " + prefixes[pIndex];
+            return d.div(new _D(10).pow(pIndex * 3)).toNumber().toFixed(2).replace(/\.?0+$/, "") + " " + prefixes[pIndex];
         }
-        return dec.toStringWithDecimalPlaces(4);
+        return d.toStringWithDecimalPlaces(4);
     }
 
-    // 완전히 정교해진 정규식 기반 수식 컴파일러 (BreakInfinity 버그 원천 해결)
+    // 💥 버그 수정의 핵심: 안전한 토큰 변환기
     function parseCustomFormula(formulaStr, useInfinity) {
-        let s = formulaStr.replace(/\s+/g, ''); // 공백 완전 제거
+        let s = formulaStr.replace(/\s+/g, '');
+        // 함수 가공 소문자 표준화
+        s = s.replace(/LOG\.\((.*?)\)/gi, "LOG($1)");
+        s = s.replace(/FLOOR\((.*?)\)/gi, "FLOOR($1)");
+
+        // 기호 및 연산자 기준으로 안전하게 분리 후 거듭제곱(^) 결합 규칙 재조립
+        let tokens = s.split(/([\+\-\*\/\(\),])/);
+        for(let i=0; i<tokens.length; i++) {
+            if(tokens[i].includes('^')) {
+                let parts = tokens[i].split('^');
+                if(parts.length === 2) {
+                    tokens[i] = useInfinity ? `_D.pow(${parts[0]},${parts[1]})` : `Math.pow(${parts[0]},${parts[1]})`;
+                }
+            }
+        }
+        s = tokens.join('');
         
-        // 괄호 및 토큰 단위 연산 순위 파괴 방지용 반복 파싱 가공
-        let prev = "";
-        if (useInfinity) {
-            // 거듭제곱(^) 결합 규칙 우선순위 치환 체인
-            while (s !== prev) {
-                prev = s;
-                s = s.replace(/([a-zA-Z0-9_.\(\)\[\]]+)\^([a-zA-Z0-9_.\(\)\[\]\+\-\*\/]+)/g, "Decimal.pow($1,$2)");
-            }
-            // 수식 함수 식별자 소문자 표준화 처리
-            s = s.replace(/LOG\.\((.*?)\)/gi, "Decimal.log10($1)");
-            s = s.replace(/FLOOR\((.*?)\)/gi, "Decimal.floor($1)");
+        if(useInfinity) {
+            s = s.replace(/LOG\((.*?)\)/g, "_D.log10($1)");
+            s = s.replace(/FLOOR\((.*?)\)/g, "_D.floor($1)");
         } else {
-            while (s !== prev) {
-                prev = s;
-                s = s.replace(/([a-zA-Z0-9_.\(\)\[\]]+)\^([a-zA-Z0-9_.\(\)\[\]\+\-\*\/]+)/g, "Math.pow($1,$2)");
-            }
-            s = s.replace(/LOG\.\((.*?)\)/gi, "Math.log10($1)");
-            s = s.replace(/FLOOR\((.*?)\)/gi, "Math.floor($1)");
+            s = s.replace(/LOG\((.*?)\)/g, "Math.log10($1)");
+            s = s.replace(/FLOOR\((.*?)\)/g, "Math.floor($1)");
         }
         return s;
     }
 
-    // 컴파일 가공된 코드 바인딩 및 샌드박스 런타임 계산기
     function evalFormula(parsedStr, currentVars, useInfinity) {
-        try {
-            let context = { t: currentTick };
-            
-            if (useInfinity) {
-                varList.forEach(v => { context[v] = new Decimal(currentVars[v]); });
-                context['Decimal'] = Decimal; // 컨텍스트 내부 바인딩 스코프 주입
-            } else {
-                varList.forEach(v => { context[v] = Number(currentVars[v]); });
-                context['Math'] = Math;
-            }
+        let context = { t: currentTick };
+        varList.forEach(v => { context[v] = useInfinity ? new _D(currentVars[v]) : Number(currentVars[v]); });
+        
+        // 브레이크 인피니티 라이브러리를 안전한 스코프 변수로 숨겨 바인딩
+        if(useInfinity) context['_D'] = _D;
 
+        try {
             const fn = new Function(...Object.keys(context), `return (${parsedStr});`);
             let res = fn(...Object.values(context));
-
-            if (useInfinity) {
-                let d = (res instanceof Decimal) ? res : new Decimal(res || 0);
-                return d.isNaN() ? new Decimal(0) : d;
+            if(useInfinity) {
+                let d = (res instanceof _D) ? res : new _D(res);
+                if(d.isNaN()) throw new Error("결과가 숫자가 아닙니다 (NaN 발생)");
+                return d;
             } else {
                 let n = Number(res);
-                return isNaN(n) || !isFinite(n) ? 0 : n;
+                if(isNaN(n) || !isFinite(n)) throw new Error("범위를 초과했거나 잘못된 연산입니다.");
+                return n;
             }
         } catch(e) {
-            return null; // 수식 크래시 감지 시 시스템 안전 정지 신호용 null 반환
+            return { error: true, message: e.message };
         }
     }
 
-    // 데이터 영구 보관용 풀 초기화 및 리셋 엔진
     function resetSimulation() {
         stopSimulation();
         currentTick = 0;
         const useInfinity = document.getElementById('use_infinity').checked;
-
-        // 누적 기록 초기화
-        historyData = { t: [0] };
+        
         varList.forEach(v => {
-            let rawInit = document.getElementById('init_' + v).value;
-            let val;
-            if (useInfinity) {
-                try { val = new Decimal(rawInit || 0); } catch(e) { val = new Decimal(0); }
-                vars[v] = val;
-                historyData[v] = [val.toNumber()];
-            } else {
-                let n = Number(rawInit);
-                val = isNaN(n) ? 0 : n;
-                vars[v] = val;
-                historyData[v] = [val];
-            }
+            document.getElementById('formula_' + v).classList.remove('error-field');
+            let raw = document.getElementById('init_' + v).value;
+            vars[v] = useInfinity ? new _D(raw || 0) : Number(raw || 0);
         });
 
-        // 실시간 요약 카드 인터페이스 렌더링
+        historyData = { t: [0] };
+        varList.forEach(v => { historyData[v] = [useInfinity ? vars[v].toNumber() : vars[v]]; });
+
         const summaryGrid = document.getElementById('summary_grid');
         summaryGrid.innerHTML = '';
         varList.forEach(v => {
             summaryGrid.innerHTML += `
                 <div style="background:#f8f9fa; padding:15px; border-radius:4px; text-align:center; border:1px solid #dee2e6;">
                     <span style="color:#555; font-weight:600; font-size:0.85rem;">${v.toUpperCase()}</span>
-                    <div id="sum_val_${v}" style="font-size:1.4rem; font-weight:400; color:#111; margin-top:5px; font-family:monospace;">0</div>
-                </div>
-            `;
+                    <div id="sum_val_${v}" style="font-size:1.4rem; font-family:monospace; margin-top:5px;">0</div>
+                </div>`;
         });
 
         document.getElementById('status_t').innerText = currentTick;
         updateUIAll();
         initCharts();
-
-        document.getElementById('log_output').innerHTML = `[시스템 초기화 완료] (Infinity 모드: ${useInfinity})\n`;
+        document.getElementById('log_output').innerHTML = `[엔진 셋업 완료] Infinity 모드: ${useInfinity}\n`;
     }
 
     function updateUIAll() {
@@ -432,122 +302,107 @@
         });
     }
 
-    // 엔진 코어 핵심 1틱 시뮬레이션 제어 루프
     function runTick() {
         const useInfinity = document.getElementById('use_infinity').checked;
         const maxTicks = parseInt(document.getElementById('max_ticks').value) || 0;
 
         if (maxTicks > 0 && currentTick >= maxTicks) {
-            document.getElementById('log_output').innerHTML = `[시뮬레이션 완료] 목표 상한선 ${maxTicks} 틱에 도달하여 정지합니다.\n` + document.getElementById('log_output').innerHTML;
             stopSimulation();
+            alert(`[완료] 목표치인 ${maxTicks} 틱에 도달했습니다.`);
             return;
         }
 
         currentTick++;
         document.getElementById('status_t').innerText = currentTick;
 
-        // 변수 동시 업데이트 연산을 위한 딥 카피 백업
-        let snapshotVars = {};
-        varList.forEach(v => {
-            snapshotVars[v] = useInfinity ? new Decimal(vars[v]) : vars[v];
-        });
+        let snapshot = {};
+        varList.forEach(v => { snapshot[v] = useInfinity ? new _D(vars[v]) : vars[v]; });
 
-        let currentLogs = [];
-        let errorList = [];
+        let logs = [];
+        for (let v of varList) {
+            let raw = document.getElementById('formula_' + v).value;
+            let parsed = parseCustomFormula(raw, useInfinity);
+            let result = evalFormula(parsed, snapshot, useInfinity);
 
-        // 6개 변수 공식 순차 대입 연산
-        varList.forEach(v => {
-            let rawForm = document.getElementById('formula_' + v).value;
-            let transForm = parseCustomFormula(rawForm, useInfinity);
-            let computed = evalFormula(transForm, snapshotVars, useInfinity);
-
-            if (computed === null) {
-                errorList.push(v); // 연산 실패 유발 시 이전 값 보호 고정
-            } else {
-                vars[v] = computed;
+            // 🚨 버그 발생 시 실시간 팝업 알림 및 중단 시스템
+            if (result && result.error) {
+                stopSimulation();
+                document.getElementById('formula_' + v).classList.add('error-field');
+                alert(`[수식 에러 발생!] 변수 [ ${v.toUpperCase()} ] 에 잘못된 수식이 있습니다.\n\n❌ 에러 메세지: ${result.message}\nℹ️ 수정 후 리셋을 눌러주세요.`);
+                return;
             }
-            currentLogs.push(`${v.toUpperCase()}: ${formatValue(vars[v], useInfinity)}`);
-        });
+            vars[v] = result;
+            logs.push(`${v.toUpperCase()}:${formatValue(vars[v], useInfinity)}`);
+        }
 
-        // 그래프 전체 트래킹을 위한 영구 축적 데이터 세팅 (제한 해제)
+        // 📈 고성능 메모리 누수 방지 스케일 그래프 압축 알고리즘
         historyData.t.push(currentTick);
         varList.forEach(v => {
-            let numericVal = useInfinity ? vars[v].toNumber() : vars[v];
-            // 자바스크립트 가시화 한계선 스케일 다운 제어 처리
-            if(!isFinite(numericVal)) numericVal = 1e308; 
-            historyData[v].push(numericVal);
+            let num = useInfinity ? vars[v].toNumber() : vars[v];
+            if(!isFinite(num)) num = 1e308;
+            historyData[v].push(num);
+        });
 
-            // Chart 라이브러리로 데이터 배열 직접 할당하여 전체 데이터 갱신
+        // 데이터가 100개를 넘어가면 짝수 인덱스를 솎아내어 메모리 저장 공간 확보 및 전체 스케일 유지
+        if (historyData.t.length > 100) {
+            historyData.t = historyData.t.filter((_, i) => i % 2 === 0 || i === historyData.t.length - 1);
+            varList.forEach(v => {
+                historyData[v] = historyData[v].filter((_, i) => i % 2 === 0 || i === historyData[v].length - 1);
+            });
+        }
+
+        varList.forEach(v => {
             if (charts[v]) {
                 charts[v].data.labels = historyData.t;
                 charts[v].data.datasets[0].data = historyData[v];
-                charts[v].update('none'); // 지연 속도 최적화를 위해 실시간 무보간 애니메이션 적용
+                charts[v].update('none');
             }
         });
 
         updateUIAll();
-
-        // 텍스트 콘솔 트래킹 로그 프레임 워크
-        let renderLog = `[Tick ${currentTick}] ` + currentLogs.join('  |  ');
-        if (errorList.length > 0) renderLog += `  ⚠️ [수식 파싱에러로 보존된 변수: ${errorList.join(', ')}]`;
-        
-        let splitLines = document.getElementById('log_output').innerHTML.split('\n');
-        if (splitLines.length > 100) splitLines.pop(); // 최대 보존 텍스트 라인 100개
-        document.getElementById('log_output').innerHTML = renderLog + '\n' + splitLines.join('\n');
+        let logLine = `[Tick ${currentTick}] ` + logs.join('  |  ');
+        let oldLogs = document.getElementById('log_output').innerHTML.split('\n');
+        if(oldLogs.length > 80) oldLogs.pop();
+        document.getElementById('log_output').innerHTML = logLine + '\n' + oldLogs.join('\n');
     }
 
-    // 자동 실행 스케줄러 컨트롤
     function startSimulation() {
         if(isRunning) return;
         isRunning = true;
-        document.getElementById('status_text').innerText = "자동 가동중";
+        document.getElementById('status_text').innerText = "가동중";
         document.getElementById('status_text').style.color = "#4c6ef5";
         document.getElementById('btn_start').disabled = true;
         document.getElementById('btn_step').disabled = true;
         document.getElementById('btn_stop').disabled = false;
-
-        let delay = (parseFloat(document.getElementById('interval_sec').value) || 0.3) * 1000;
-        timerId = setInterval(runTick, delay);
+        timerId = setInterval(runTick, (parseFloat(document.getElementById('interval_sec').value) || 0.2) * 1000);
     }
 
     function stopSimulation() {
         if(!isRunning) return;
         isRunning = false;
-        document.getElementById('status_text').innerText = "일시 정지";
+        document.getElementById('status_text').innerText = "정지됨";
         document.getElementById('status_text').style.color = "#fa5252";
         document.getElementById('btn_start').disabled = false;
         document.getElementById('btn_step').disabled = false;
         document.getElementById('btn_stop').disabled = true;
-
         if(timerId) { clearInterval(timerId); timerId = null; }
     }
 
-    // Chart.js Desmos 감성 커스텀 라인 그래프 초기화 매니저
     function initCharts() {
         varList.forEach(v => {
-            if(charts[v]) charts[v].destroy(); // 기존 인스턴스 소멸
-
-            const canvasCtx = document.getElementById(`chart_${v}`).getContext('2d');
-            charts[v] = new Chart(canvasCtx, {
+            if(charts[v]) charts[v].destroy();
+            const ctx = document.getElementById(`chart_${v}`).getContext('2d');
+            charts[v] = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: historyData.t,
-                    datasets: [{
-                        data: historyData[v],
-                        borderColor: '#4c6ef5',
-                        backgroundColor: 'rgba(76, 110, 245, 0.03)',
-                        borderWidth: 1.5,
-                        pointRadius: historyData.t.length > 50 ? 0 : 2, // 데이터가 많아지면 점을 생략하여 가독성 및 속도 확보
-                        fill: true,
-                        tension: 0.05
-                    }]
+                    datasets: [{ data: historyData[v], borderColor: '#4c6ef5', backgroundColor: 'rgba(76, 110, 245, 0.02)', borderWidth: 1.5, pointRadius: 0, fill: true }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
                     scales: {
-                        x: { grid: { color: 'rgba(0, 0, 0, 0.04)' }, ticks: { color: '#666', font: { size: 10 } } },
-                        y: { grid: { color: 'rgba(0, 0, 0, 0.04)' }, ticks: { color: '#666', font: { size: 10 } } }
+                        x: { grid: { color: 'rgba(0, 0, 0, 0.03)' }, ticks: { color: '#666', font: { size: 9 } } },
+                        y: { grid: { color: 'rgba(0, 0, 0, 0.03)' }, ticks: { color: '#666', font: { size: 9 } } }
                     },
                     plugins: { legend: { display: false } }
                 }
@@ -555,12 +410,10 @@
         });
     }
 
-    // 기본 가동 이벤트 바인딩
     document.getElementById('btn_step').addEventListener('click', runTick);
     document.getElementById('btn_start').addEventListener('click', startSimulation);
     document.getElementById('btn_stop').addEventListener('click', stopSimulation);
     document.getElementById('btn_reset').addEventListener('click', resetSimulation);
-
     window.onload = resetSimulation;
 </script>
 </body>
