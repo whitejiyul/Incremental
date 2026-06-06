@@ -3,441 +3,355 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>인크리멘탈 IDLE 게임 V2</title>
+    <title>커스텀 공식 틱 시뮬레이터</title>
     <style>
         body {
-            font-family: 'Malgun Gothic', sans-serif;
-            background-color: #1e1e24;
-            color: #f5f5f5;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
             margin: 0;
+            padding: 20px;
+            color: #333;
         }
         .container {
-            max-width: 650px;
-            width: 100%;
-            background: #2a2a35;
-            padding: 24px;
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
         }
-        h1 { text-align: center; color: #4caf50; margin-top: 0; }
-        .stats {
-            background: #333344;
-            padding: 15px;
-            border-radius: 8px;
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 25px;
+        }
+        .section {
             margin-bottom: 20px;
-            font-size: 1.1rem;
-            line-height: 1.6;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background-color: #f8fafc;
         }
-        .highlight { color: #ffeb3b; font-weight: bold; }
         .section-title {
-            border-bottom: 2px solid #444;
-            padding-bottom: 5px;
-            margin-top: 20px;
-            color: #81c784;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #4a5568;
         }
-        .upgrade-row {
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: #4a5568;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-family: monospace;
+        }
+        .controls {
             display: flex;
             gap: 10px;
-            margin-bottom: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
         }
-        .btn {
-            background-color: #4caf50;
-            color: white;
+        button {
+            flex: 1;
+            padding: 12px;
             border: none;
-            padding: 10px 15px;
-            font-size: 1rem;
             border-radius: 6px;
+            font-weight: bold;
             cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-            text-align: left;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            transition: background 0.2s;
+            min-width: 120px;
         }
-        .main-upgrade-btn { flex: 1; }
-        .max-btn {
-            background-color: #0288d1;
-            width: 110px;
+        button.primary { background-color: #3b82f6; color: white; }
+        button.primary:hover { background-color: #2563eb; }
+        button.success { background-color: #10b981; color: white; }
+        button.success:hover { background-color: #059669; }
+        button.danger { background-color: #ef4444; color: white; }
+        button.danger:hover { background-color: #dc2626; }
+        button.secondary { background-color: #64748b; color: white; }
+        button.secondary:hover { background-color: #475569; }
+        
+        .status-panel {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
             text-align: center;
-            justify-content: center;
+            margin-top: 15px;
+        }
+        .status-box {
+            background: #edf2f7;
+            padding: 10px;
+            border-radius: 6px;
             font-weight: bold;
         }
-        .max-btn:hover { background-color: #0277bd; }
-        .btn:hover { background-color: #45a049; }
-        .btn:active { transform: scale(0.98); }
-        .btn:disabled {
-            background-color: #555;
-            color: #888;
-            cursor: not-allowed;
-            transform: none;
+        .status-box span {
+            display: block;
+            font-size: 1.2rem;
+            color: #2b6cb0;
+            margin-top: 5px;
         }
-        .reset-btn { background-color: #e91e63; width: 100%; }
-        .reset-btn:hover { background-color: #d81b60; }
-        .auto-container {
-            background: #2e3b4e;
+        .log-box {
+            background: #1e293b;
+            color: #38bdf8;
             padding: 15px;
             border-radius: 8px;
-            margin-top: 15px;
-            border: 1px solid #4f6888;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
         }
-        .info-text { font-size: 0.85rem; color: #bbb; }
-        .bonus-text { color: #00e676; font-weight: bold; }
+        .help-text {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>자동 인크리멘탈 게임 V2</h1>
-    
-    <div class="stats">
-        <div>보유 포인트: <span id="points" class="highlight">0.0</span> p</div>
-        <div>초당 생산량 (인컴): <span id="pps" class="highlight">1.0</span> p/s</div>
-        <div>리셋 횟수: <span id="reset-count">0</span>회 (기본 배수: <span id="reset-multiplier">x1</span>)</div>
-        <div id="five-reset-bonus-display" class="info-text" style="display:none;">
-            ★ 5회차 이상 리셋 보너스: 모든 업글 베이스 <span class="bonus-text" id="special-bonus-val">+0.00</span> 적용 중!
+    <h1>사용자 정의 공식 틱 시뮬레이터</h1>
+
+    <div class="section">
+        <div class="section-title">💡 변수 업데이트 공식 설정 (JavaScript 문법 적용)</div>
+        <div class="help-text">사용 가능한 요소: 현재 틱(t), 이전 틱의 변수들(x, y, z, a, b, c), Math.log(값), Math.pow(밑, 지수) 또는 밑**지수</div>
+        <div class="grid" style="margin-top: 10px;">
+            <div>
+                <label>x = </label>
+                <input type="text" id="formula_x" value="x + 1">
+            </div>
+            <div>
+                <label>y = </label>
+                <input type="text" id="formula_y" value="y + t">
+            </div>
+            <div>
+                <label>z = </label>
+                <input type="text" id="formula_z" value="x * y">
+            </div>
+            <div>
+                <label>a = </label>
+                <input type="text" id="formula_a" value="Math.pow(2, t)">
+            </div>
+            <div>
+                <label>b = </label>
+                <input type="text" id="formula_b" value="Math.log(x + 1)">
+            </div>
+            <div>
+                <label>c = </label>
+                <input type="text" id="formula_c" value="a / (b + 1)">
+            </div>
         </div>
     </div>
 
-    <h3 class="section-title">리셋 (Prestige)</h3>
-    <button id="reset-button" class="btn reset-btn" onclick="prestige()">
-        <div>
-            <strong>다음 단계로 리셋</strong><br>
-            <span class="info-text">업그레이드 추가 해금, 배수 상승 (5회부터 특수 보너스 & 자동화)</span>
+    <div class="section">
+        <div class="section-title">⚙️ 초기 변수 값 설정 (t = 0 일 때)</div>
+        <div class="grid">
+            <div><label>초기 x:</label><input type="number" id="init_x" value="0"></div>
+            <div><label>초기 y:</label><input type="number" id="init_y" value="0"></div>
+            <div><label>초기 z:</label><input type="number" id="init_z" value="0"></div>
+            <div><label>초기 a:</label><input type="number" id="init_a" value="1"></div>
+            <div><label>초기 b:</label><input type="number" id="init_b" value="0"></div>
+            <div><label>초기 c:</label><input type="number" id="init_c" value="0"></div>
         </div>
-        <span id="reset-cost">비용: 100 p</span>
-    </button>
+    </div>
 
-    <h3 class="section-title">업그레이드 목록</h3>
-    <div id="upgrades-container">
-        </div>
-
-    <div id="automation-section" style="display: none;">
-        <h3 class="section-title">자동화 시스템 (리셋 5회 보상)</h3>
-        <div class="auto-container">
-            <div style="display:flex; justify-content:space-between; margin-bottom:10px; align-items:center;">
-                <div>
-                    <strong>자동 구매기 (Auto Buyer)</strong><br>
-                    <span class="info-text">해금된 업그레이드 중 살 수 있는 가장 싼 것을 자동으로 구매합니다.</span><br>
-                    <span class="info-text">현재 작동 주기: <span id="auto-interval-display" class="highlight">1.00</span>초</span>
-                </div>
-                <div>
-                    <label style="cursor:pointer; font-weight:bold;">
-                        <input type="checkbox" id="auto-toggle" checked style="transform: scale(1.2); margin-right:5px;"> 작동 활성화
-                    </label>
-                </div>
+    <div class="section">
+        <div class="section-title">🕹️ 실행 제어 패널</div>
+        <div class="grid">
+            <div>
+                <label>자동 실행 주기 (초):</label>
+                <input type="number" id="interval_sec" value="1" step="0.1" min="0.1">
             </div>
-            <button id="auto-speed-btn" class="btn" style="background-color:#7e57c2; width:100%;" onclick="buyAutoSpeed()">
-                <div>
-                    <strong>자동화 주기 단축 (Lv.<span id="auto-level">0</span>)</strong><br>
-                    <span class="info-text">다음 주기: <span id="auto-next-interval">0.00</span>초로 단축</span>
-                </div>
-                <span id="auto-speed-cost">비용: 1,000 p</span>
-            </button>
+            <div>
+                <label>목표 틱 제한 (0 이면 영원히):</label>
+                <input type="number" id="max_ticks" value="0" min="0">
+            </div>
         </div>
+        
+        <div class="controls">
+            <button class="primary" id="btn_step">수동 (한 틱만)</button>
+            <button class="success" id="btn_start">자동 시작</button>
+            <button class="danger" id="btn_stop" disabled>정지</button>
+            <button class="secondary" id="btn_reset">리셋</button>
+        </div>
+
+        <div class="status-panel">
+            <div class="status-box">현재 상태<span id="status_text" style="color:#64748b;">대기중</span></div>
+            <div class="status-box">현재 틱 (t)<span id="status_t">0</span></div>
+            <div class="status-box">목표 틱 제한<span id="status_max">영원히</span></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">📊 시뮬레이션 로그 출력 (최근 50개)</div>
+        <div class="log-box" id="log_output">시뮬레이션을 시작하세요...</div>
     </div>
 </div>
 
 <script>
-    // 게임 데이터 상태
-    let state = {
-        points: 0,
-        resetCount: 0,
-        autoLevel: 0,
-        upgrades: {}
+    // 시뮬레이션 내부 변수 상태
+    let state = { t: 0, x: 0, y: 0, z: 0, a: 0, b: 0, c: 0 };
+    let timerId = null;
+    let isRunning = false;
+
+    // DOM 요소 캐싱
+    const inputs = {
+        x: document.getElementById('init_x'), y: document.getElementById('init_y'), z: document.getElementById('init_z'),
+        a: document.getElementById('init_a'), b: document.getElementById('init_b'), c: document.getElementById('init_c')
     };
+    const formulas = {
+        x: document.getElementById('formula_x'), y: document.getElementById('formula_y'), z: document.getElementById('formula_z'),
+        a: document.getElementById('formula_a'), b: document.getElementById('formula_b'), c: document.getElementById('formula_c')
+    };
+    const logOutput = document.getElementById('log_output');
+    const statusT = document.getElementById('status_t');
+    const statusMax = document.getElementById('status_max');
+    const statusText = document.getElementById('status_text');
 
-    // 1~24번째 업그레이드 데이터 생성 및 초기화
-    function initUpgrades() {
-        state.upgrades[1] = { amount: 0, cost: 5, isFixedCost: true, basePps: 1 };
-        for (let i = 2; i <= 24; i++) {
-            state.upgrades[i] = {
-                amount: 0,
-                cost: 5 * Math.pow(10, i),
-                isFixedCost: true, // 문제 조건 상 가격이 고정이므로 true
-                basePps: 0
+    const btnStep = document.getElementById('btn_step');
+    const btnStart = document.getElementById('btn_start');
+    const btnStop = document.getElementById('btn_stop');
+    const btnReset = document.getElementById('btn_reset');
+
+    // 초기화 함수
+    function resetSimulation() {
+        stopSimulation();
+        state.t = 0;
+        state.x = parseFloat(inputs.x.value) || 0;
+        state.y = parseFloat(inputs.y.value) || 0;
+        state.z = parseFloat(inputs.z.value) || 0;
+        state.a = parseFloat(inputs.a.value) || 0;
+        state.b = parseFloat(inputs.b.value) || 0;
+        state.c = parseFloat(inputs.c.value) || 0;
+        
+        const maxTicks = parseInt(document.getElementById('max_ticks').value) || 0;
+        statusMax.innerText = maxTicks === 0 ? "영원히" : maxTicks + " 틱";
+        statusT.innerText = state.t;
+        
+        logOutput.innerHTML = `[초기화 완료] t=${state.t} -> x:${state.x}, y:${state.y}, z:${state.z}, a:${state.a}, b:${state.b}, c:${state.c}\n`;
+    }
+
+    // 안전하게 공식을 계산하는 함수
+    function evalFormula(formulaStr, currentVars) {
+        try {
+            // 자바스크립트의 Math 함수들을 편리하게 쓸 수 있도록 주입
+            const context = {
+                t: currentVars.t, x: currentVars.x, y: currentVars.y, z: currentVars.z,
+                a: currentVars.a, b: currentVars.b, c: currentVars.c,
+                Math: Math,
+                log: Math.log, log10: Math.log10, pow: Math.pow,
+                sin: Math.sin, cos: Math.cos, tan: Math.tan
             };
-        }
-    }
-    initUpgrades();
-
-    // 표기법 변환 함수
-    function format(num) {
-        if (num >= 1e9) return num.toExponential(2);
-        return num.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-    }
-
-    // 리셋 비용 공식
-    function getResetCost() {
-        let amt = state.resetCount;
-        let exponent = amt + Math.pow(1.01, amt);
-        return Math.pow(100, exponent);
-    }
-
-    // 자동화 업그레이드 비용 공식: 1000^amount
-    function getAutoSpeedCost() {
-        return Math.pow(1000, state.autoLevel);
-    }
-
-    // 자동화 주기 계산 공식: 1초 / (Lv * 0.2 + 1)
-    function getAutoInterval() {
-        return 1 / (state.autoLevel * 0.2 + 1);
-    }
-
-    // 5회차 이상 리셋 시 제공되는 모든 업글 베이스 추가치 (+0.05 * resetCount)
-    function getFiveResetBonus() {
-        if (state.resetCount >= 5) {
-            return 0.05 * state.resetCount;
-        }
-        return 0;
-    }
-
-    // 초당 총 생산량(PPS) 계산 내부 로직
-    function calculateTotalPps() {
-        let bonus = {};
-        let specialBonus = getFiveResetBonus();
-        for (let i = 1; i <= 24; i++) bonus[i] = specialBonus; // 5회차 보너스 기본 탑재
-
-        // n번째 업그레이드가 n-1번째 업그레이드 베이스를 증가시킴 (+0.2 * amount)
-        for (let i = 24; i >= 2; i--) {
-            if (state.upgrades[i].amount > 0) {
-                bonus[i - 1] += 0.2 * state.upgrades[i].amount;
-            }
-        }
-
-        let totalBase = 1; // 기본 시작 보너스 1 p/s
-        for (let i = 1; i <= 24; i++) {
-            let upg = state.upgrades[i];
-            let effectiveBase = upg.basePps + bonus[i];
-            totalBase += effectiveBase * upg.amount;
-        }
-
-        return totalBase * (state.resetCount + 1);
-    }
-
-    // 일반 개별 구매
-    function buyUpgrade(id) {
-        let upg = state.upgrades[id];
-        if (state.points >= upg.cost) {
-            state.points -= upg.cost;
-            upg.amount++;
-            updateUI();
-        }
-    }
-
-    // 최대 구매(Max Buy) 구현
-    function buyMaxUpgrade(id) {
-        let upg = state.upgrades[id];
-        if (state.points >= upg.cost) {
-            // 가격이 고정이므로 살 수 있는 개수는 [보유포인트 / 고정가격] 의 정수 몫입니다.
-            let maxAmount = Math.floor(state.points / upg.cost);
-            if (maxAmount > 0) {
-                state.points -= (maxAmount * upg.cost);
-                upg.amount += maxAmount;
-                updateUI();
-            }
-        }
-    }
-
-    // 자동화 속도 업그레이드 구매
-    function buyAutoSpeed() {
-        let cost = getAutoSpeedCost();
-        if (state.points >= cost) {
-            state.points -= cost;
-            state.autoLevel++;
-            updateUI();
-            restartAutoTimer(); // 타이머 주기 갱신을 위해 재시작
-        }
-    }
-
-    // 리셋 실행
-    function prestige() {
-        let cost = getResetCost();
-        if (state.points >= cost) {
-            state.points = 0;
-            state.resetCount++;
             
-            // 모든 일반 업그레이드 개수 초기화
-            for (let i = 1; i <= 24; i++) {
-                state.upgrades[i].amount = 0;
-            }
-            // 자동화 레벨은 유지 여부 명시가 없으므로 방치형 게임 문법에 따라 유지하도록 설계했습니다.
+            // 공식을 실행할 dynamic function 생성
+            const fn = new Function(...Object.keys(context), `return (${formulaStr});`);
+            const result = fn(...Object.values(context));
             
-            updateUI();
-            restartAutoTimer();
+            return isNaN(result) || !isFinite(result) ? 0 : result;
+        } catch (e) {
+            return null; // 에러 발생 시 처리
         }
     }
 
-    // UI 동적 및 전체 업데이트
-    function updateUI() {
-        let currentPps = calculateTotalPps();
-        document.getElementById('points').innerText = format(state.points);
-        document.getElementById('pps').innerText = format(currentPps);
-        document.getElementById('reset-count').innerText = state.resetCount;
-        document.getElementById('reset-multiplier').innerText = "x" + (state.resetCount + 1);
-
-        // 5회 리셋 보너스 정보 출력 제어
-        let sBonus = getFiveResetBonus();
-        if (sBonus > 0) {
-            document.getElementById('five-reset-bonus-display').style.display = 'block';
-            document.getElementById('special-bonus-val').innerText = "+" + sBonus.toFixed(2);
-        } else {
-            document.getElementById('five-reset-bonus-display').style.display = 'none';
-        }
-
-        // 리셋 버튼 설정
-        let resetCost = getResetCost();
-        document.getElementById('reset-cost').innerText = "비용: " + format(resetCost) + " p";
-        document.getElementById('reset-button').disabled = state.points < resetCost;
-
-        // 자동화 섹션 노출 제어 (리셋 5회 이상 시 해금)
-        if (state.resetCount >= 5) {
-            document.getElementById('automation-section').style.display = 'block';
-            let autoCost = getAutoSpeedCost();
-            let currentInt = getAutoInterval();
-            let nextInt = 1 / ((state.autoLevel + 1) * 0.2 + 1);
-
-            document.getElementById('auto-level').innerText = state.autoLevel;
-            document.getElementById('auto-interval-display').innerText = currentInt.toFixed(3);
-            document.getElementById('auto-next-interval').innerText = nextInt.toFixed(3);
-            document.getElementById('auto-speed-cost').innerText = "비용: " + format(autoCost) + " p";
-            document.getElementById('auto-speed-btn').disabled = state.points < autoCost;
-        } else {
-            document.getElementById('automation-section').style.display = 'none';
-        }
-
-        // 업그레이드 리스트 그리기
-        let container = document.getElementById('upgrades-container');
-        container.innerHTML = '';
-
-        let unlockedCount = Math.min(24, 1 + state.resetCount);
-
-        // 각 업글별 현재 시너지 수치 사전 계산
-        let bonus = {};
-        for (let i = 1; i <= 24; i++) bonus[i] = sBonus;
-        for (let i = 24; i >= 2; i--) {
-            bonus[i - 1] += 0.2 * state.upgrades[i].amount;
-        }
-
-        for (let i = 1; i <= unlockedCount; i++) {
-            let upg = state.upgrades[i];
-            
-            let row = document.createElement('div');
-            row.className = 'upgrade-row';
-
-            // 메인 구매 버튼
-            let mainBtn = document.createElement('button');
-            mainBtn.className = 'btn main-upgrade-btn';
-            mainBtn.disabled = state.points < upg.cost;
-            mainBtn.onclick = () => buyUpgrade(i);
-
-            let effectText = (i === 1) ? `기본 +${upg.basePps} p/s` : `업글 ${i-1} 베이스 증가 (+0.2×개수)`;
-            let bonusText = bonus[i] > 0 ? ` <span style="color:#00e676;">(+${bonus[i].toFixed(2)} 효과)</span>` : "";
-
-            mainBtn.innerHTML = `
-                <div>
-                    <strong>업그레이드 ${i}</strong> [${upg.amount}개]<br>
-                    <span class="info-text">${effectText}${bonusText}</span>
-                </div>
-                <span>${format(upg.cost)} p</span>
-            `;
-
-            // 최대 구매 버튼
-            let maxBtn = document.createElement('button');
-            maxBtn.className = 'btn max-btn';
-            let maxAmt = Math.floor(state.points / upg.cost);
-            maxBtn.disabled = maxAmt <= 0;
-            maxBtn.innerHTML = `MAX<br><span style="font-size:0.75rem; font-weight:normal;">(+${maxAmt})</span>`;
-            maxBtn.onclick = () => buyMaxUpgrade(i);
-
-            row.appendChild(mainBtn);
-            row.appendChild(maxBtn);
-            container.appendChild(row);
-        }
-    }
-
-    // --- 자동화 시스템 루프 제어 ---
-    let autoTimer = null;
-
-    function executeAutoBuy() {
-        // 자동화 체크박스가 켜져있고 리셋 5회 이상일 때만 작동
-        if (state.resetCount < 5 || !document.getElementById('auto-toggle').checked) return;
-
-        let unlockedCount = Math.min(24, 1 + state.resetCount);
-        let targetId = -1;
-        let minCost = Infinity;
-
-        // 해금된 업그레이드 중 가장 저렴하며 현재 살 수 있는 것 탐색
-        for (let i = 1; i <= unlockedCount; i++) {
-            let upg = state.upgrades[i];
-            if (state.points >= upg.cost && upg.cost < minCost) {
-                minCost = upg.cost;
-                targetId = i;
-            }
-        }
-
-        // 대상을 찾았다면 1개 자동 구매 진행
-        if (targetId !== -1) {
-            buyUpgrade(targetId);
-        }
-    }
-
-    function restartAutoTimer() {
-        if (autoTimer) clearInterval(autoTimer);
-        if (state.resetCount >= 5) {
-            let intervalMs = getAutoInterval() * 1000;
-            autoTimer = setInterval(executeAutoBuy, intervalMs);
-        }
-    }
-
-
-    // --- 메인 게임 스케줄러 루프 (0.1초마다 가동) ---
-    setInterval(() => {
-        let pps = calculateTotalPps();
-        state.points += pps / 10;
+    // 1 틱 실행 함수
+    function runTick() {
+        const maxTicks = parseInt(document.getElementById('max_ticks').value) || 0;
         
-        // 부드럽게 숫자가 올라가도록 메인 텍스트만 실시간 밀어넣기
-        document.getElementById('points').innerText = format(state.points);
-        document.getElementById('pps').innerText = format(pps);
-        
-        // 연산 최적화를 위해 버튼의 실시간 활성/비활성 상태 및 서브 텍스트 수치만 제어
-        let resetCost = getResetCost();
-        document.getElementById('reset-button').disabled = state.points < resetCost;
-
-        if (state.resetCount >= 5) {
-            document.getElementById('auto-speed-btn').disabled = state.points < getAutoSpeedCost();
+        // 목표 틱 도달 시 자동 정지
+        if (maxTicks > 0 && state.t >= maxTicks) {
+            logOutput.innerHTML = `[목표 도달] 지정한 ${maxTicks}틱에 도달하여 종료합니다.\n` + logOutput.innerHTML;
+            stopSimulation();
+            return;
         }
 
-        let container = document.getElementById('upgrades-container');
-        let rows = container.getElementsByClassName('upgrade-row');
-        let unlockedCount = Math.min(24, 1 + state.resetCount);
+        // 다음 틱 진행
+        state.t++;
 
-        if (rows.length === unlockedCount) {
-            for (let i = 1; i <= unlockedCount; i++) {
-                let upg = state.upgrades[i];
-                let row = rows[i-1];
-                let mainBtn = row.getElementsByClassName('main-upgrade-btn')[0];
-                let maxBtn = row.getElementsByClassName('max-btn')[0];
+        // 동시 업데이트를 위해 이전 값 보존 후 새 값 계산
+        const prev = { ...state };
+        let errors = [];
 
-                mainBtn.disabled = state.points < upg.cost;
-                
-                let maxAmt = Math.floor(state.points / upg.cost);
-                maxBtn.disabled = maxAmt <= 0;
-                maxBtn.getElementsByTagName('span')[0].innerText = `(+${maxAmt})`;
+        ['x', 'y', 'z', 'a', 'b', 'c'].forEach(varName => {
+            const fStr = formulas[varName].value;
+            const res = evalFormula(fStr, prev);
+            if (res === null) {
+                errors.push(varName);
+                state[varName] = prev[varName]; // 에러 시 이전 값 유지
+            } else {
+                state[varName] = res;
             }
-        } else {
-            updateUI();
-        }
-    }, 100);
+        });
 
-    // 초기 가동 시작
-    updateUI();
-    restartAutoTimer();
+        // UI 업데이트
+        statusT.innerText = state.t;
+        
+        // 로그 포맷팅 (소수점 4자리까지 끊어서 가독성 확보)
+        let logStr = `[틱 ${state.t}] `;
+        if (errors.length > 0) logStr += `⚠️(공식 에러 변수: ${errors.join(',')}) `;
+        logStr += `x:${state.x.toFixed(4)} | y:${state.y.toFixed(4)} | z:${state.z.toFixed(4)} | a:${state.a.toFixed(4)} | b:${state.b.toFixed(4)} | c:${state.c.toFixed(4)}\n`;
+        
+        // 최근 로그가 맨 위로 올라오도록 추가
+        const currentLogs = logOutput.innerHTML.split('\n');
+        if (currentLogs.length > 50) currentLogs.pop(); // 로그 최대 50개 유지
+        logOutput.innerHTML = logStr + currentLogs.join('\n');
+    }
+
+    // 자동 실행 시작
+    function startSimulation() {
+        if (isRunning) return;
+        isRunning = true;
+        statusText.innerText = "자동 실행중";
+        statusText.style.color = "#10b981";
+        
+        btnStart.disabled = true;
+        btnStep.disabled = true;
+        btnStop.disabled = false;
+
+        const interval = (parseFloat(document.getElementById('interval_sec').value) || 1) * 1000;
+        timerId = setInterval(runTick, interval);
+    }
+
+    // 자동 실행 정지
+    function stopSimulation() {
+        if (!isRunning) return;
+        isRunning = false;
+        statusText.innerText = "일시정지";
+        statusText.style.color = "#ef4444";
+        
+        btnStart.disabled = false;
+        btnStep.disabled = false;
+        btnStop.disabled = true;
+
+        if (timerId) {
+            clearInterval(timerId);
+            timerId = null;
+        }
+    }
+
+    // 이벤트 리스너 등록
+    btnStep.addEventListener('click', () => {
+        statusText.innerText = "수동 제어";
+        statusText.style.color = "#3b82f6";
+        runTick();
+    });
+    btnStart.addEventListener('click', startSimulation);
+    btnStop.addEventListener('click', stopSimulation);
+    btnReset.addEventListener('click', resetSimulation);
+
+    // 페이지 로드 시 초기화 실행
+    window.onload = resetSimulation;
 </script>
 
 </body>
 </html>
-
