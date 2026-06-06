@@ -3,122 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>고급 틱 시뮬레이터 (Break Infinity & Graph)</title>
+    <title>Desmos Style Tick Simulator</title>
     <script src="https://cdn.jsdelivr.net/npm/break_infinity.js@2.0.0/dist/break_infinity.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        /* Desmos 스타일 하얀 격자 테마 정의 */
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: #0f172a;
-            color: #cbd5e1;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #ffffff;
+            background-image: 
+                linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(to right, rgba(0, 0, 0, 0.1) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+            color: #222222;
             margin: 0;
             padding: 20px;
         }
         .container {
             max-width: 1000px;
             margin: 0 auto;
-            background: #1e293b;
+            background: rgba(255, 255, 255, 0.95);
             padding: 25px;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            backdrop-filter: blur(4px);
         }
-        h1 { text-align: center; color: #38bdf8; margin-top: 0; }
+        h1 { text-align: center; color: #333333; font-weight: 400; margin-top: 0; letter-spacing: -0.5px; }
         .section {
             margin-bottom: 20px;
             padding: 15px;
-            border: 1px solid #334155;
-            border-radius: 10px;
-            background-color: #1e293b;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background-color: #fafafa;
         }
-        .section-title { font-weight: bold; margin-bottom: 12px; color: #94a3b8; display: flex; justify-content: space-between; }
+        .section-title { font-weight: 600; margin-bottom: 12px; color: #444; display: flex; justify-content: space-between; }
         .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         @media(max-width: 600px) { .grid { grid-template-columns: 1fr; } }
-        label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: #94a3b8; }
+        label { display: block; margin-bottom: 5px; font-size: 0.85rem; color: #555; font-weight: 500; }
+        
         input[type="text"], input[type="number"], select {
-            width: 100%; padding: 10px; border: 1px solid #475569; border-radius: 6px;
-            box-sizing: border-box; background: #0f172a; color: #fff; font-family: monospace;
+            width: 100%; padding: 8px 10px; border: 1px solid #bbb; border-radius: 4px;
+            box-sizing: border-box; background: #ffffff; color: #111; font-family: monospace;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            border-color: #4c6ef5; outline: none;
         }
         
-        /* 단축키 키패드 스타일 */
+        /* 단축키 패드 */
         .shortcut-pad { margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; }
         .btn-short {
-            background: #334155; color: #38bdf8; border: none; padding: 3px 8px;
-            font-size: 0.75rem; border-radius: 4px; cursor: pointer; font-family: monospace;
+            background: #eee; color: #333; border: 1px solid #ccc; padding: 2px 6px;
+            font-size: 0.75rem; border-radius: 3px; cursor: pointer; font-family: monospace;
         }
-        .btn-short:hover { background: #475569; }
+        .btn-short:hover { background: #ddd; }
 
-        /* 토글 스위치 디자인 */
+        /* 토글 스위치 */
         .switch-container { display: flex; align-items: center; gap: 10px; }
-        .switch {
-            position: relative; display: inline-block; width: 50px; height: 26px;
-        }
+        .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider {
             position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #475569; transition: .3s; border-radius: 34px;
+            background-color: #ccc; transition: .2s; border-radius: 22px;
         }
         .slider:before {
-            position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px;
-            background-color: white; transition: .3s; border-radius: 50%;
+            position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
+            background-color: white; transition: .2s; border-radius: 50%;
         }
-        input:checked + .slider { background-color: #10b981; }
-        input:checked + .slider:before { transform: translateX(24px); }
+        input:checked + .slider { background-color: #4c6ef5; }
+        input:checked + .slider:before { transform: translateX(22px); }
 
-        /* 제어 및 상태 */
+        /* 버튼 컨트롤 */
         .controls { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
         button.main-btn {
-            flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; min-width: 100px;
+            flex: 1; padding: 10px; border: 1px solid #bbb; border-radius: 4px; font-weight: 500; cursor: pointer; min-width: 100px; background: #fff; color: #333;
         }
-        .btn-blue { background: #2563eb; color: white; } .btn-blue:hover { background: #1d4ed8; }
-        .btn-green { background: #16a34a; color: white; } .btn-green:hover { background: #15803d; }
-        .btn-red { background: #dc2626; color: white; } .btn-red:hover { background: #b91c1c; }
-        .btn-gray { background: #4b5563; color: white; } .btn-gray:hover { background: #374151; }
-        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        button.main-btn:hover { background: #f5f5f5; border-color: #999; }
+        #btn_start { background: #4c6ef5; color: white; border-color: #3b5bdb; }
+        #btn_start:hover { background: #3b5bdb; }
+        #btn_stop { background: #fa5252; color: white; border-color: #e03131; }
+        #btn_stop:hover { background: #e03131; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; background: #eee !important; color: #aaa !important; border-color: #ccc !important; }
+
+        /* 데스모스 스타일 대시보드 상태 */
+        .status-bar {
+            margin-top: 15px; display: flex; justify-content: space-between; font-size: 0.9rem; 
+            background: #f1f3f5; padding: 10px; border-radius: 4px; border: 1px solid #dee2e6;
+        }
 
         /* 탭 구조 */
-        .tabs { display: flex; background: #0f172a; border-radius: 8px; padding: 5px; margin-top: 20px; overflow-x: auto; }
+        .tabs { display: flex; border-bottom: 2px solid #dee2e6; margin-top: 20px; overflow-x: auto; gap: 4px; }
         .tab-btn {
-            background: none; border: none; color: #94a3b8; padding: 10px 20px; cursor: pointer;
-            font-weight: bold; border-radius: 6px; white-space: nowrap;
+            background: #f8f9fa; border: 1px solid #dee2e6; border-bottom: none; color: #666; padding: 8px 16px; cursor: pointer;
+            font-weight: 500; border-radius: 4px 4px 0 0; white-space: nowrap; margin-bottom: -2px;
         }
-        .tab-btn.active { background: #1e293b; color: #38bdf8; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .tab-btn.active { background: #fff; color: #4c6ef5; border-color: #dee2e6 #dee2e6 transparent #dee2e6; border-top: 3px solid #4c6ef5; font-weight: bold; }
         .tab-content { display: none; padding: 20px 0; }
         .tab-content.active { display: block; }
 
-        /* 모니터 및 로그 */
-        .display-val { font-size: 2rem; font-weight: bold; color: #f59e0b; font-family: monospace; margin: 10px 0; text-align: center; }
-        .chart-container { position: relative; height: 300px; width: 100%; background: #0f172a; border-radius: 8px; padding: 10px; box-sizing: border-box; }
+        .display-val { font-size: 1.8rem; font-weight: 400; color: #111; font-family: monospace; margin: 10px 0; text-align: center; }
+        .chart-container { position: relative; height: 280px; width: 100%; background: #ffffff; border: 1px solid #dee2e6; border-radius: 4px; padding: 8px; box-sizing: border-box; }
+        
         .log-box {
-            background: #0f172a; color: #10b981; padding: 15px; border-radius: 8px;
-            height: 180px; overflow-y: auto; font-family: monospace; font-size: 0.85rem; white-space: pre-wrap;
+            background: #fafafa; color: #333; border: 1px solid #dee2e6; padding: 12px; border-radius: 4px;
+            height: 180px; overflow-y: auto; font-family: monospace; font-size: 0.85rem; white-space: pre-wrap; line-height: 1.4;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🚀 초거대수 지원 틱 시뮬레이터</h1>
+    <h1>📐 Desmos Style 커스텀 틱 시뮬레이터</h1>
 
     <div class="section grid">
         <div class="switch-container">
-            <span style="font-weight: bold;">Infinity모드 (Break Infinity)</span>
+            <span style="font-weight: bold;">Infinity 모드 (Break Infinity)</span>
             <label class="switch">
                 <input type="checkbox" id="use_infinity" checked onchange="resetSimulation()">
                 <span class="slider"></span>
             </label>
         </div>
         <div>
-            <label>표기법 제한 설정:</label>
-            <select id="notation_type">
-                <option value="custom">스마트 지수 표기법 (1e303↑ / 1e1e6↑M)</option>
+            <label>숫자 표기법 방식 선택:</label>
+            <select id="notation_type" onchange="updateUIAll()">
+                <option value="standard">일반 표기법 (1k ~ 1Ce 단위 적용 / 1e303↑ 지수)</option>
+                <option value="pure_sci">무조건 지수 표현법 (Scientific)</option>
             </select>
         </div>
     </div>
 
     <div class="section">
         <div class="section-title">
-            <span>📝 변수 업데이트 공식 정의</span>
-            <span style="font-size:0.8rem; color:#64748b;">지원문법: FLOOR(값), LOG.(값), 값^값, t(현재틱)</span>
+            <span>📝 변수 설정 및 공식 변환기</span>
+            <span style="font-size:0.8rem; color:#777;">치환문법: FLOOR(값), LOG.(값), 값^값, t(현재틱)</span>
         </div>
         <div class="grid">
             <script>
@@ -130,8 +150,8 @@
                     document.write(`
                         <div>
                             <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <label style="font-weight:bold; color:#f8fafc;">${v} 공식 및 초기값</label>
-                                <input type="text" id="init_${v}" value="${defaultInits[v]}" style="width:60px; padding:4px; text-align:center; font-size:0.8rem;" placeholder="초기값">
+                                <label style="font-weight:bold; color:#333;">변수 ${v.toUpperCase()} 공식 & 초기값</label>
+                                <input type="text" id="init_${v}" value="${defaultInits[v]}" style="width:70px; padding:3px; text-align:center; font-size:0.8rem;" placeholder="초기값">
                             </div>
                             <input type="text" id="formula_${v}" value="${defaultFormulas[v]}" style="margin-top:4px;">
                             <div class="shortcut-pad" data-target="formula_${v}">
@@ -154,47 +174,46 @@
 
     <div class="section grid">
         <div>
-            <label>자동 실행 주기 (초):</label>
-            <input type="number" id="interval_sec" value="0.5" step="0.1" min="0.1">
+            <label>자동 틱 실행 주기 (초):</label>
+            <input type="number" id="interval_sec" value="0.3" step="0.1" min="0.1">
         </div>
         <div>
-            <label>목표 틱 (0이면 무한정):</label>
+            <label>목표 제한 틱 (0은 영원히):</label>
             <input type="number" id="max_ticks" value="0" min="0">
         </div>
     </div>
 
     <div class="controls">
-        <button class="main-btn btn-blue" id="btn_step">수동 한 틱</button>
-        <button class="main-btn btn-green" id="btn_start">자동 시작</button>
-        <button class="main-btn btn-red" id="btn_stop" disabled>정지</button>
-        <button class="main-btn btn-gray" id="btn_reset">리셋</button>
+        <button class="main-btn" id="btn_step">수동 한 틱</button>
+        <button class="main-btn" id="btn_start">자동 시작</button>
+        <button class="main-btn" id="btn_stop" disabled>정지</button>
+        <button class="main-btn" id="btn_reset">리셋</button>
     </div>
 
-    <div style="margin-top: 15px; display: flex; justify-content: space-between; font-size: 0.9rem; background: #0f172a; padding: 10px; border-radius: 6px;">
-        <span>상태: <b id="status_text" style="color:#94a3b8;">대기중</b></span>
-        <span>현재 틱: <b id="status_t" style="color:#38bdf8;">0</b></span>
+    <div class="status-bar">
+        <span>엔진 상태: <b id="status_text" style="color:#666;">대기중</b></span>
+        <span>진행 틱: <b id="status_t" style="color:#4c6ef5;">0</b></span>
     </div>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="openTab(event, 'tab_summary')">실시간 요약</button>
+        <button class="tab-btn active" onclick="openTab(event, 'tab_summary')">실시간 대시보드</button>
         <script>
             varList.forEach(v => {
-                document.write(`<button class="tab-btn" onclick="openTab(event, 'tab_${v}')">변수 ${v.toUpperCase()}</button>`);
+                document.write(`<button class="tab-btn" onclick="openTab(event, 'tab_${v}')">${v.toUpperCase()}</button>`);
             });
         </script>
-        <button class="tab-btn" onclick="openTab(event, 'tab_logs')">전체 로그</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab_logs')">텍스트 로그</button>
     </div>
 
     <div id="tab_summary" class="tab-content active">
-        <div class="grid" id="summary_grid">
-            </div>
+        <div class="grid" id="summary_grid"></div>
     </div>
 
     <script>
         varList.forEach(v => {
             document.write(`
                 <div id="tab_${v}" class="tab-content">
-                    <div style="text-align:center; color:#94a3b8;">변수 ${v.toUpperCase()} 현재 값</div>
+                    <div style="text-align:center; color:#666; font-size:0.9rem;">변수 ${v.toUpperCase()} 실시간 추적값</div>
                     <div class="display-val" id="val_${v}">0</div>
                     <div class="chart-container">
                         <canvas id="chart_${v}"></canvas>
@@ -205,13 +224,12 @@
     </script>
 
     <div id="tab_logs" class="tab-content">
-        <div class="log-box" id="log_output">시뮬레이션을 시작해 주세요...</div>
+        <div class="log-box" id="log_output">시뮬레이션을 시작하세요.</div>
     </div>
-
 </div>
 
 <script>
-    // 시뮬레이션 상태 변수
+    // 전역 코어 시뮬레이션 상태 변수
     let currentTick = 0;
     let vars = { x: 0, y: 0, z: 0, a: 0, b: 0, c: 0 };
     let historyData = { t: [], x: [], y: [], z: [], a: [], b: [], c: [] };
@@ -219,23 +237,32 @@
     let timerId = null;
     let isRunning = false;
 
-    // 기호 단축키 입력 도우미
+    // 일련의 접두사 단위 명칭 정의 (1k ~ 1Ce 단위 매핑 스택)
+    const prefixes = [
+        "", "k", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc", "Ud", "Dd", "Td",
+        "Qad", "Qid", "Sxd", "Spd", "Ocd", "Nod", "Vg", "Uvg", "Dvg", "Tvg", "Qavg", "Qivg",
+        "Sxvg", "Spvg", "Ocvg", "Novg", "Tg", "Utg", "Dtg", "Ttg", "Qatg", "Qitg", "Sxtg",
+        "Sptg", "Octg", "Notg", "Qag", "Uqag", "Dqag", "Tqag", "Qaqag", "Qiqag", "Sxqag",
+        "Spqag", "Ocqag", "Noqag", "Qin", "Uqin", "Dqin", "Tqin", "Qaqin", "Qiqin", "Sxqin",
+        "Spqin", "Ocqin", "Noqin", "Sxg", "Usxg", "Dsxg", "Tsxg", "Qasxg", "Qisxg", "Sxxxg",
+        "Spxxg", "Ocxg", "Noxg", "Spg", "Uspg", "Dspg", "Tspg", "Qaspg", "Qispg", "Sxspg",
+        "Spspg", "Ocspg", "Nospg", "Ocg", "Uocg", "Docg", "Tocg", "Qaocg", "Qiocg", "Sxocg",
+        "Spocg", "Ococg", "Noocg", "Nog", "Unog", "Dnog", "Tnog", "Qanog", "Qinog", "Sxnog",
+        "Spnog", "Ocnog", "Nonog", "Ce"
+    ];
+
+    // 기호 단축키 유틸리티
     function addText(targetId, text) {
         const input = document.getElementById(targetId);
         const start = input.selectionStart;
         const end = input.selectionEnd;
-        const val = input.value;
-        input.value = val.substring(0, start) + text + val.substring(end);
+        input.value = input.value.substring(0, start) + text + input.value.substring(end);
         input.focus();
-        // 괄호가 포함된 함수인 경우 괄호 안으로 커서 이동 시키기
-        if(text.includes('()')) {
-            input.setSelectionRange(start + text.length - 1, start + text.length - 1);
-        } else {
-            input.setSelectionRange(start + text.length, start + text.length);
-        }
+        let offset = text.includes('()') ? text.length - 1 : text.length;
+        input.setSelectionRange(start + offset, start + offset);
     }
 
-    // 탭 전환 시스템
+    // 탭 토글 처리기
     function openTab(evt, tabId) {
         const contents = document.getElementsByClassName("tab-content");
         for (let i = 0; i < contents.length; i++) contents[i].style.display = "none";
@@ -245,144 +272,183 @@
         document.getElementById(tabId).style.display = "block";
         evt.currentTarget.classList.add('active');
 
-        // 차트 탭 활성화 시 렌더링 리사이즈 버그 방지 깨우기
-        const varName = tabId.replace('tab_', '');
-        if(charts[varName]) {
-            charts[varName].update();
-        }
+        const vName = tabId.replace('tab_', '');
+        if(charts[vName]) charts[vName].update('none');
     }
 
-    // 초거대수 대응 포맷터 (노테이션 설정)
-    function formatValue(val, useInfinity) {
-        if (!useInfinity) {
-            let n = Number(val);
+    // 초거대수 버그방지 확장 포맷 드라이버
+    function formatValue(rawVal, useInfinity) {
+        let mode = document.getElementById('notation_type').value;
+        
+        // 1. 데이터 파싱 안전 검사 구축
+        let dec;
+        if (useInfinity) {
+            dec = (rawVal instanceof Decimal) ? rawVal : new Decimal(rawVal || 0);
+        } else {
+            let n = Number(rawVal);
             if (isNaN(n)) return "NaN";
             if (!isFinite(n)) return "Infinity";
-            if (Math.abs(n) >= 1e303 || Math.abs(n) === 0) return n.toExponential(4);
-            return n.toLocaleString(undefined, {maximumFractionDigits: 4});
+            dec = new Decimal(n);
         }
 
-        // Break Infinity 객체인 경우
-        let dec = Decimal(val);
         if (dec.isNaN()) return "NaN";
         if (!dec.isFinite()) return "Infinity";
 
-        let absExp = Math.abs(dec.layer === 0 ? Math.log10(Math.abs(dec.mag)) : dec.mag);
+        // 2. 무조건 지수 표현법 분기
+        if (mode === "pure_sci") {
+            if (dec.layer >= 2 || (dec.layer === 1 && dec.mag >= 1000000)) {
+                let loglog = dec.layer === 2 ? dec.mag : Math.log10(dec.mag);
+                return "1e" + loglog.toFixed(2) + "M";
+            }
+            if (dec.abs().lt(1e4) && dec.abs().gt(1e-4) && !dec.isZero()) {
+                return dec.toNumber().toFixed(4).replace(/\.?0+$/, "");
+            }
+            if (dec.isZero()) return "0";
+            return dec.toStringWithDecimalPlaces(4);
+        }
 
-        // 1e1e6 넘을 때 -> 1e1e6 꼴 메가 지수로 변환 (유저요청: 1e1e6넘으면 1e1e6m)
+        // 3. 일반 표기법 분기 (1k ~ 1Ce 스택 처리 연산)
+        let abs = dec.abs();
+        
+        // 메가 지수 스케일 검사
         if (dec.layer >= 2 || (dec.layer === 1 && dec.mag >= 1000000)) {
             let loglog = dec.layer === 2 ? dec.mag : Math.log10(dec.mag);
             return "1e" + loglog.toFixed(2) + "M";
         }
-        // 1e303 이상일 때 무조건 지수표현
-        if (dec.layer === 1 && dec.mag >= 303) {
+
+        // 1e303 오버플로우 구간 체크 -> 지수강제전환
+        if (abs.gte(new Decimal("1e303"))) {
             return dec.toStringWithDecimalPlaces(4);
         }
-        // 일반 표현
-        return dec.toNumber().toLocaleString(undefined, {maximumFractionDigits: 4});
-    }
 
-    // 인간 친화 수식 -> JS 수식 치환기 (Regex 활용)
-    function parseCustomFormula(formulaStr, useInfinity) {
-        let s = formulaStr;
-        
-        // 1. 공백 제거 및 대소문자 통일 정제
-        s = s.replace(/\s+/g, '');
-        
-        // 2. 수^수 패턴 처리 -> 변환: (밑)^(지수) 형태를 전개
-        // 안전하게 루프 돌며 내부 매칭구조 치환 (^ 기호 매칭)
-        let powerRegex = /([a-zA-Z0-9\.\(\)]+)\^([a-zA-Z0-9\.\(\)]+)/g;
-        if(useInfinity) {
-            s = s.replace(powerRegex, "pow($1,$2)");
-        } else {
-            s = s.replace(powerRegex, "Math.pow($1,$2)");
+        // 일반 접두사 변환 계산기 (Standard Notation)
+        if (abs.lt(1000)) {
+            let num = dec.toNumber();
+            return Number.isInteger(num) ? num.toString() : num.toFixed(4).replace(/\.?0+$/, "");
         }
 
-        // 3. LOG.(값) -> Math.log10 이나 Decimal.log10 으로 연동 변환
-        s = s.replace(/LOG\.\((.*?)\)/gi, useInfinity ? "log10($1)" : "Math.log10($1)");
+        let exp = abs.log10().floor().toNumber();
+        let pIndex = Math.floor(exp / 3);
+        
+        if (pIndex < prefixes.length) {
+            let mValue = dec.div(new Decimal(10).pow(pIndex * 3)).toNumber();
+            return mValue.toFixed(2).replace(/\.?0+$/, "") + " " + prefixes[pIndex];
+        }
 
-        // 4. FLOOR(값) 처리
-        s = s.replace(/FLOOR\((.*?)\)/gi, useInfinity ? "floor($1)" : "Math.floor($1)");
+        return dec.toStringWithDecimalPlaces(4);
+    }
 
+    // 커스텀 문법 -> 호환 스크립트 코드 컨버터 수식 가공 처리기
+    function parseCustomFormula(formulaStr, useInfinity) {
+        let s = formulaStr.replace(/\s+/g, ''); // 공백 삭제
+
+        // 복잡도 기반 역순 가열 루프 연산 멱법(^ 기호) 브레이킹 매칭 치환 최적화
+        // 정규식 가독성을 위해 괄호 세트를 정밀 추적하여 JS 내장 Math 라이브러리로 이관
+        let prev;
+        if(useInfinity) {
+            // ^ 기호를 파싱할 때 우선순위 버그 유발 방지용 치환 
+            while (s !== prev) {
+                prev = s;
+                s = s.replace(/([a-zA-Z0-9\.\(\)\[\]\+\-\*\/]+)\^([a-zA-Z0-9\.\(\)\[\]\+\-\*\/]+)/g, "Decimal.pow($1,$2)");
+            }
+            s = s.replace(/LOG\.\((.*?)\)/gi, "Decimal.log10($1)");
+            s = s.replace(/FLOOR\((.*?)\)/gi, "Decimal.floor($1)");
+        } else {
+            while (s !== prev) {
+                prev = s;
+                s = s.replace(/([a-zA-Z0-9\.\(\)\[\]\+\-\*\/]+)\^([a-zA-Z0-9\.\(\)\[\]\+\-\*\/]+)/g, "Math.pow($1,$2)");
+            }
+            s = s.replace(/LOG\.\((.*?)\)/gi, "Math.log10($1)");
+            s = s.replace(/FLOOR\((.*?)\)/gi, "Math.floor($1)");
+        }
         return s;
     }
 
-    // 수식 안전 연산 환경 조성
+    // 무조건 안전 연산 보장용 틱 가동 검증기
     function evalFormula(parsedStr, currentVars, useInfinity) {
         try {
             let context = { t: currentTick };
             
             if(useInfinity) {
-                // Break Infinity 환경 컨텍스트 매핑
-                varList.forEach(v => { context[v] = Decimal(currentVars[v]); });
-                context['pow'] = (a, b) => Decimal(a).pow(b);
-                context['log10'] = (a) => Decimal(a).log10();
-                context['floor'] = (a) => Decimal(a).floor();
+                varList.forEach(v => { context[v] = new Decimal(currentVars[v]); });
+                context['Decimal'] = Decimal;
             } else {
-                // 일반 수치형 환경 컨텍스트 매핑
                 varList.forEach(v => { context[v] = Number(currentVars[v]); });
                 context['Math'] = Math;
             }
 
             const fn = new Function(...Object.keys(context), `return (${parsedStr});`);
             let res = fn(...Object.values(context));
-            return useInfinity ? Decimal(res) : Number(res);
+
+            if(useInfinity) {
+                let d = (res instanceof Decimal) ? res : new Decimal(res || 0);
+                return d.isNaN() ? new Decimal(0) : d;
+            } else {
+                let n = Number(res);
+                return isNaN(n) ? 0 : n;
+            }
         } catch(e) {
-            return null; // 수식 오류 검출
+            return null; // 포뮬러 구문 파괴 탐지 시 null 리턴하여 변수 보호
         }
     }
 
-    // 데이터 리셋 기능
+    // 데이터 완전 리셋 및 재시동 빌더
     function resetSimulation() {
         stopSimulation();
         currentTick = 0;
         const useInfinity = document.getElementById('use_infinity').checked;
 
-        // 배열 및 데이터 초기화
         historyData = { t: [0] };
         varList.forEach(v => {
-            let initInput = document.getElementById('init_' + v).value;
-            let parsedInit = useInfinity ? Decimal(initInput || 0) : Number(initInput || 0);
-            vars[v] = parsedInit;
-            historyData[v] = [useInfinity ? parsedInit.toNumber() : parsedInit];
+            let rawInit = document.getElementById('init_' + v).value;
+            let val;
+            if(useInfinity) {
+                try { val = new Decimal(rawInit || 0); } catch(e) { val = new Decimal(0); }
+                vars[v] = val;
+                historyData[v] = [val.toNumber()];
+            } else {
+                let n = Number(rawInit);
+                val = isNaN(n) ? 0 : n;
+                vars[v] = val;
+                historyData[v] = [val];
+            }
         });
 
-        // 대시보드 UI 그리기
+        // 요약 패널 리프레시 동적 조립
         const summaryGrid = document.getElementById('summary_grid');
         summaryGrid.innerHTML = '';
         varList.forEach(v => {
             summaryGrid.innerHTML += `
-                <div style="background:#0f172a; padding:15px; border-radius:8px; text-align:center;">
-                    <span style="color:#94a3b8; font-weight:bold;">${v.toUpperCase()}</span>
-                    <div id="sum_val_${v}" style="font-size:1.4rem; font-weight:bold; color:#f59e0b; margin-top:5px; font-family:monospace;">0</div>
+                <div style="background:#f8f9fa; padding:15px; border-radius:4px; text-align:center; border:1px solid #dee2e6;">
+                    <span style="color:#555; font-weight:600; font-size:0.85rem;">${v.toUpperCase()}</span>
+                    <div id="sum_val_${v}" style="font-size:1.4rem; font-weight:400; color:#111; margin-top:5px; font-family:monospace;">0</div>
                 </div>
             `;
         });
 
         document.getElementById('status_t').innerText = currentTick;
-        updateUI(useInfinity);
+        updateUIAll();
         initCharts();
 
-        document.getElementById('log_output').innerHTML = `[시스템] 변수 초기화 완료 (Infinity 모드: ${useInfinity ? '켜짐' : '꺼짐'})\n`;
+        document.getElementById('log_output').innerHTML = `[알림] 시뮬레이터 시스템이 정상 초기화되었습니다. (Infinity Mode: ${useInfinity})\n`;
     }
 
-    // 실시간 UI 드라이버
-    function updateUI(useInfinity) {
+    function updateUIAll() {
+        const useInfinity = document.getElementById('use_infinity').checked;
         varList.forEach(v => {
             let formatted = formatValue(vars[v], useInfinity);
-            // 메인 인디케이터 창 반영
             if(document.getElementById('val_' + v)) document.getElementById('val_' + v).innerText = formatted;
             if(document.getElementById('sum_val_' + v)) document.getElementById('sum_val_' + v).innerText = formatted;
         });
     }
 
-    // 시뮬레이션 핵심 엔진 1틱 연산 프로세스
+    // 엔진 코어 1틱 드라이브 루프
     function runTick() {
         const useInfinity = document.getElementById('use_infinity').checked;
         const maxTicks = parseInt(document.getElementById('max_ticks').value) || 0;
 
         if (maxTicks > 0 && currentTick >= maxTicks) {
-            document.getElementById('log_output').innerHTML = `[알림] 설정한 제한 ${maxTicks}틱에 도달했습니다.\n` + document.getElementById('log_output').innerHTML;
+            document.getElementById('log_output').innerHTML = `[가동 종료] 지정된 상한 ${maxTicks} 틱에 도달했습니다.\n` + document.getElementById('log_output').innerHTML;
             stopSimulation();
             return;
         }
@@ -390,75 +456,74 @@
         currentTick++;
         document.getElementById('status_t').innerText = currentTick;
 
-        // 동시적(Simultaneous) 처리를 위해 현재 스냅샷 복사 복제
-        let prevVars = {};
-        varList.forEach(v => { prevVars[v] = useInfinity ? Decimal(vars[v]) : vars[v]; });
-
-        let logs = [];
-        let errorFlags = [];
-
+        // 변수 오염 원천 분리용 딥 카피 캡슐화
+        let snapshotVars = {};
         varList.forEach(v => {
-            let rawFormula = document.getElementById('formula_' + v).value;
-            let parsed = parseCustomFormula(rawFormula, useInfinity);
-            let nextVal = evalFormula(parsed, prevVars, useInfinity);
-
-            if(nextVal === null || (useInfinity && nextVal.isNaN())) {
-                errorFlags.push(v);
-                // 에러 발생시 정지 상태 보존 유지
-            } else {
-                vars[v] = nextVal;
-            }
-            
-            logs.push(`${v}:${formatValue(vars[v], useInfinity)}`);
+            snapshotVars[v] = useInfinity ? new Decimal(vars[v]) : vars[v];
         });
 
-        // 차트용 이력 데이터 축적 (가시성 스케일링을 위해 일반 Number 캐스팅 변환 저장)
-        historyData.t.push(currentTick);
-        if(historyData.t.length > 30) historyData.t.shift(); // 실시간 가독성을 위해 최신 30개 스냅샷 유지
+        let currentLogs = [];
+        let errorList = [];
 
         varList.forEach(v => {
-            let numVal = useInfinity ? vars[v].toNumber() : vars[v];
-            historyData[v].push(numVal);
-            if(historyData[v].length > 30) historyData[v].shift();
+            let rawForm = document.getElementById('formula_' + v).value;
+            let transForm = parseCustomFormula(rawForm, useInfinity);
+            let computed = evalFormula(transForm, snapshotVars, useInfinity);
 
-            // 실시간 차트 업데이트 연동
+            if(computed === null) {
+                errorList.push(v); // 이전 틱 값 강제 고정하여 튕김 버그 제어
+            } else {
+                vars[v] = computed;
+            }
+            currentLogs.push(`${v.toUpperCase()}: ${formatValue(vars[v], useInfinity)}`);
+        });
+
+        // 가시성 차트용 변동내역 레코드 버퍼 큐 적재
+        historyData.t.push(currentTick);
+        if(historyData.t.length > 35) historyData.t.shift();
+
+        varList.forEach(v => {
+            let numericRepresentation = useInfinity ? vars[v].toNumber() : vars[v];
+            historyData[v].push(numericRepresentation);
+            if(historyData[v].length > 35) historyData[v].shift();
+
             if(charts[v]) {
                 charts[v].data.labels = historyData.t;
                 charts[v].data.datasets[0].data = historyData[v];
-                charts[v].update('none'); // 퍼포먼스 확보를 위해 애니메이션 스킵 업데이트
+                charts[v].update('none'); // 스무스 틱 반사성 속도 보장을 위해 애니메이션 보간 안 함
             }
         });
 
-        updateUI(useInfinity);
+        updateUIAll();
 
-        // 콘솔 및 로그 텍스트 누적 출력
-        let logLine = `[틱 ${currentTick}] ` + logs.join(' | ');
-        if(errorFlags.length > 0) logLine += ` ⚠️ 수식에러 변수:(${errorFlags.join(',')})`;
+        // 실시간 콘솔 트래킹 로그 출력 가공
+        let renderLog = `[Tick ${currentTick}] ` + currentLogs.join('  |  ');
+        if(errorList.length > 0) renderLog += `  ⚠️ [공식 오류 처리 보존 변수: ${errorList.join(', ')}]`;
         
-        let currentLogs = document.getElementById('log_output').innerHTML.split('\n');
-        if(currentLogs.length > 60) currentLogs.pop();
-        document.getElementById('log_output').innerHTML = logLine + '\n' + currentLogs.join('\n');
+        let splitLines = document.getElementById('log_output').innerHTML.split('\n');
+        if(splitLines.length > 60) splitLines.pop();
+        document.getElementById('log_output').innerHTML = renderLog + '\n' + splitLines.join('\n');
     }
 
-    // 자동 루프 스케줄러 컨트롤러
+    // 자동 실행 스케줄 제어 엔진 인터페이스
     function startSimulation() {
         if(isRunning) return;
         isRunning = true;
         document.getElementById('status_text').innerText = "자동 가동중";
-        document.getElementById('status_text').style.color = "#10b981";
+        document.getElementById('status_text').style.color = "#4c6ef5";
         document.getElementById('btn_start').disabled = true;
         document.getElementById('btn_step').disabled = true;
         document.getElementById('btn_stop').disabled = false;
 
-        let interval = (parseFloat(document.getElementById('interval_sec').value) || 0.5) * 1000;
-        timerId = setInterval(runTick, interval);
+        let delay = (parseFloat(document.getElementById('interval_sec').value) || 0.3) * 1000;
+        timerId = setInterval(runTick, delay);
     }
 
     function stopSimulation() {
         if(!isRunning) return;
         isRunning = false;
         document.getElementById('status_text').innerText = "일시 정지";
-        document.getElementById('status_text').style.color = "#ef4444";
+        document.getElementById('status_text').style.color = "#fa5252";
         document.getElementById('btn_start').disabled = false;
         document.getElementById('btn_step').disabled = false;
         document.getElementById('btn_stop').disabled = true;
@@ -466,22 +531,22 @@
         if(timerId) { clearInterval(timerId); timerId = null; }
     }
 
-    // Chart.js 모듈 생성 및 파이프라인 빌드
+    // Chart.js를 이용한 Desmos 감성의 격자 선형 플롯 팩토리 선언
     function initCharts() {
         varList.forEach(v => {
-            if(charts[v]) charts[v].destroy(); // 기존 인스턴스 초기화 제거
+            if(charts[v]) charts[v].destroy();
 
-            const ctx = document.getElementById(`chart_${v}`).getContext('2d');
-            charts[v] = new Chart(ctx, {
+            const canvasCtx = document.getElementById(`chart_${v}`).getContext('2d');
+            charts[v] = new Chart(canvasCtx, {
                 type: 'line',
                 data: {
                     labels: historyData.t,
                     datasets: [{
-                        label: `${v.toUpperCase()} 추이`,
                         data: historyData[v],
-                        borderColor: '#38bdf8',
-                        backgroundColor: 'rgba(56, 189, 248, 0.1)',
-                        borderWidth: 2,
+                        borderColor: '#4c6ef5',
+                        backgroundColor: 'rgba(76, 110, 245, 0.03)',
+                        borderWidth: 1.5,
+                        pointRadius: 2,
                         fill: true,
                         tension: 0.1
                     }]
@@ -490,8 +555,8 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
-                        y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } }
+                        x: { grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#666', font: { size: 10 } } },
+                        y: { grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#666', font: { size: 10 } } }
                     },
                     plugins: { legend: { display: false } }
                 }
@@ -499,16 +564,13 @@
         });
     }
 
-    // 이벤트 리스너 마운트
+    // 컴포넌트 이벤트 기본 바인딩
     document.getElementById('btn_step').addEventListener('click', runTick);
     document.getElementById('btn_start').addEventListener('click', startSimulation);
     document.getElementById('btn_stop').addEventListener('click', stopSimulation);
     document.getElementById('btn_reset').addEventListener('click', resetSimulation);
 
-    // 최초 윈도우 로드 인스톨러
-    window.onload = () => {
-        resetSimulation();
-    };
+    window.onload = resetSimulation;
 </script>
 </body>
 </html>
